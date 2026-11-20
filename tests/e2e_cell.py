@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""End-to-end test of the Plan B mini cell, driven through the Borgmaster's REST API.
+"""End-to-end test of the live mini cell, driven through the Borgmaster's REST API.
 
     docker compose up -d --build
     python3 tests/e2e_cell.py [http://localhost:8080]

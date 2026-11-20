@@ -16,7 +16,7 @@ export class Store {
     this.error = '';
     this.paused = false;
     this.history = { cpuAlloc: [], cpuUsed: [], machines: new Map() };
-    this.results = null;      // Plan A CSVs, loaded on demand
+    this.results = null;      // simulation result CSVs, loaded on demand
     this.listeners = new Set();
     this.timer = null;
   }

@@ -1,20 +1,19 @@
 # Google-Borg
 
-**Google's Borg scheduler, rebuilt in C++ and tested two ways: on Google's own cluster trace, and in a live five-machine cell that you drive from a terminal-style web console.**
+**Google's Borg scheduler, rebuilt in C++. We use it to reproduce the Borg paper's results on Google's own cluster trace, and to run a live Borg cell that you control from a terminal-style web console.**
 
 This is a replication of the scheduling core of [*Large-scale cluster management at Google with Borg*](https://research.google/pubs/large-scale-cluster-management-at-google-with-borg/) (Verma et al., EuroSys 2015).
 
-![How the project fits together: Plan A replays the Google trace through borgsim to CSV results and charts; Plan B runs a borgmaster and five Borglets in Docker, driven from a browser; both link the same scheduler library in core/](assets/pipeline.svg)
+![How the project fits together: one scheduler library in core/ is used to reproduce Google's results (borgsim replays the Google trace and writes CSV results and charts) and to run a live Borg cell (a borgmaster and five Borglets in Docker, driven from a browser)](assets/pipeline.svg)
 
 **Contents**
 1. [What it is](#1-what-it-is)
 2. [Quick start](#2-quick-start)
 3. [Example: one cell under pressure](#3-example-one-cell-under-pressure)
 4. [How the scheduler decides](#4-how-the-scheduler-decides)
-5. [Plan A: replaying Google's trace](#5-plan-a-replaying-googles-trace)
-6. [Plan B: a live mini Borg cell](#6-plan-b-a-live-mini-borg-cell)
-7. [Results](#7-results)
-8. [Code map, paper mapping and limitations](#8-code-map-paper-mapping-and-limitations)
+5. [Reproducing Google's results](#5-reproducing-googles-results)
+6. [The live Borg cell](#6-the-live-borg-cell)
+7. [Code map, paper mapping and limitations](#7-code-map-paper-mapping-and-limitations)
 
 ## 1. What it is
 
@@ -30,22 +29,21 @@ The paper's scheduling ideas, all implemented here:
 - **Preemption by priority**, where prod never preempts prod.
 - **Speed-ups** that make this fast enough for 10,000 machines (§3.4).
 - **Resource reclamation** (§5.5): batch work runs in resources that prod tasks reserve but don't use.
-- **Cell compaction** (§5), the evaluation method: how small a cell can a workload still fit into?
+- **Cell compaction** (§5), the paper's way of measuring a scheduler: how small a cell can a workload still fit into?
 
 **What this repository builds**
 
 | Part | What it does | Code |
 |---|---|---|
 | **The scheduler** | feasibility, three scoring policies, preemption, priority bands, the §3.4 speed-ups, reclamation | `core/` (a C++17 library) |
-| **Plan A: simulation** | a simulator like the paper's Fauxmaster. It packs a snapshot of Google's 2011 cluster trace and runs cell compaction for six experiments | `sim/` → `borgsim` |
-| **Plan B: live cell** | a real Borgmaster and five Borglets in Docker, with each task isolated in a cgroup v2, failure detection and a REST API | `master/`, `borglet/` |
-| **Console** | a terminal-style web UI to schedule, edit, reschedule and delete jobs and watch the cell live | `ui/` |
+| **Reproducing Google's results** | a simulator like the paper's Fauxmaster: it replays a snapshot of Google's 2011 cluster trace and reruns the paper's experiments | `sim/` → `borgsim` |
+| **The live Borg cell** | a real Borgmaster and five Borglets in Docker, each task isolated in a cgroup v2, failure detection, a REST API and a terminal-style web console | `master/`, `borglet/`, `ui/` |
 | *Not built* | Paxos replication, naming (BNS, Chubby), the borgcfg language | out of scope |
 
 **How the pieces fit** (the diagram above):
-1. **Plan A** replays a slice of the public Google trace offline. `borgsim` takes a snapshot of every running task, then measures the smallest cell the workload fits into under different scheduler settings. The results go to `results/*.csv`, and `tools/plot.py` draws the charts in [Results](#7-results).
-2. **Plan B** runs the same scheduler in a real, small cell. You submit jobs from the browser. The borgmaster places them on Borglet containers, which run each task in its own cgroup.
-3. Both plans link the same `core/` library. The code behind the experiment numbers is the code that places your tasks in the live cell.
+1. **One scheduler.** `core/` implements Borg's scheduling, and everything else uses it.
+2. **Reproducing Google's results.** `borgsim` reruns the paper's experiments on Google's public cluster trace, with our scheduler placing every task. The numbers go to `results/*.csv`. `tools/plot.py` draws the charts in this README, and the console's *sim* tab shows them too.
+3. **The live Borg cell.** The borgmaster runs the same scheduler in a real, small cell. You submit jobs from the browser, and Borglet containers run each task in its own cgroup.
 
 **Headline results**
 - Our hybrid scoring policy needs **2.9% fewer machines** than best fit (paper: 3–5%).
@@ -57,7 +55,7 @@ The paper's scheduling ideas, all implemented here:
 
 **You need:**
 - a C++17 compiler and `make`;
-- Docker Desktop, for Plan B;
+- Docker Desktop, for the live cell;
 - Python 3 with matplotlib, only to redraw the charts;
 - Node.js 18+ and Chrome, only for the UI tests.
 
@@ -66,7 +64,7 @@ make            # builds borgsim, borgmaster, borglet and test_core into build/b
 make test       # 14 scheduler unit tests
 ```
 
-**Plan A: run the experiments**
+**Reproduce the paper's results**
 
 ```bash
 tools/fetch_trace.sh                       # ~11 MB slice of Google's 2011 trace into data/trace
@@ -78,7 +76,7 @@ python3 tools/plot.py                      # results/*.csv -> results/*.png
 - **One experiment at a time:** name it, e.g. `./build/bin/borgsim --workload trace policies buckets`.
 - **All options:** `./build/bin/borgsim --help`.
 
-**Plan B: start the live cell**
+**Run the live cell**
 
 ```bash
 docker compose up --build -d     # 1 borgmaster + 5 Borglets
@@ -161,7 +159,7 @@ The console's log view (key `4`) shows these decisions as they happen. An excerp
 
 ## 4. How the scheduler decides
 
-`core/` is a small C++17 library: a `Cell` holds machines and tasks, and `Scheduler::schedule(cell)` makes one pass over the pending queue. Both plans call it: `borgsim` to pack the trace, and the borgmaster once a second.
+`core/` is a small C++17 library: a `Cell` holds machines and tasks, and `Scheduler::schedule(cell)` makes one pass over the pending queue. The simulator calls it to pack Google's trace; the borgmaster calls it once a second.
 
 ![One scheduling pass in four steps: order the queue, filter machines, score each one, place or preempt; evicted tasks go back to the queue](assets/scheduler.svg)
 
@@ -183,7 +181,7 @@ score = policy term                       worst fit, best fit or hybrid (below)
       + 0.3                               for every soft constraint it satisfies
 ```
 
-The spread weight is 0.1 in Plan A and 0.5 in the live cell, and the package bonus is 0.2 and 1.0. The eviction cost is much larger than any other term. Preemption is a last resort, and when it is needed the scheduler picks the fewest and lowest-priority victims.
+The spread weight is 0.1 in the simulator and 0.5 in the live cell, and the package bonus is 0.2 and 1.0. The eviction cost is much larger than any other term. Preemption is a last resort, and when it is needed the scheduler picks the fewest and lowest-priority victims.
 
 **4. Place, or preempt.** The task goes to the best machine. If that machine is short of room, tasks are evicted lowest priority first, and the biggest first within a priority. They go back to the queue for the next pass.
 
@@ -196,7 +194,7 @@ The spread weight is 0.1 in Plan A and 0.5 in the live cell, and the package bon
 | batch | 100–199 | batch and free-tier tasks of lower priority |
 | free tier | below 100 | free-tier tasks of lower priority |
 
-In Plan A the trace's priorities run from 0 to 11, and prod is 9 and up.
+Google's trace uses priorities 0 to 11 instead; there, prod is 9 and up.
 
 **Scoring policies.** The paper compares three policies:
 
@@ -208,7 +206,7 @@ In Plan A the trace's priorities run from 0 to 11, and prod is 9 and up.
 
 "Free" means the fraction of the machine left after placing the task.
 
-The paper doesn't publish its hybrid formula, so this one is our own design. It is best fit plus a penalty for leaving a machine with lots of one resource and none of the other: that leftover is *stranded*, because no task can use it. We chose the weight α = 10 with a sweep (see [Results](#7-results)).
+The paper doesn't publish its hybrid formula, so this one is our own design. It is best fit plus a penalty for leaving a machine with lots of one resource and none of the other: that leftover is *stranded*, because no task can use it. We chose the weight α = 10 with a sweep (see [what we found](#what-we-found)).
 
 Here is the difference on one example. The scores are what `Scheduler::score()` returns for this exact setup:
 
@@ -223,11 +221,20 @@ Here is the difference on one example. The scores are what `Scheduler::score()` 
 - **Score cache:** a score is kept until its machine changes. Each machine has a version number that goes up when its tasks change.
 - **Relaxed randomization:** machines are visited in a random order (a random start and a random stride), and the search stops after 64 feasible machines instead of checking them all.
 
-**Resource reclamation (§5.5).** A task's *limit* is what it asked for. Most tasks use much less. The Borgmaster estimates a *reservation* for each task (its real usage plus a safety margin), and fits non-prod tasks against the reservations of the tasks already placed, instead of their limits. Prod tasks are always fitted against limits. Plan A uses reclamation in two of its experiments; the live cell fits every task against its limits.
+**Resource reclamation (§5.5).** A task's *limit* is what it asked for. Most tasks use much less. The Borgmaster estimates a *reservation* for each task (its real usage plus a safety margin), and fits non-prod tasks against the reservations of the tasks already placed, instead of their limits. Prod tasks are always fitted against limits. Two of the experiments turn reclamation on, as Borg runs; the live cell fits every task against its limits.
 
-## 5. Plan A: replaying Google's trace
+## 5. Reproducing Google's results
 
-The paper evaluated Borg's scheduler offline, with the Fauxmaster: the real scheduler code run against a recorded state of a cell. `borgsim` does the same with the public trace the paper cites.
+**What this means.** The paper doesn't only describe Borg. It also tests its design choices with experiments, and reports results such as:
+- running prod and batch work in **separate cells** would need 20–30% more machines;
+- rounding resource requests up to **fixed sizes** would need 30–50% more machines;
+- the **hybrid** scoring policy needs 3–5% fewer machines than best fit.
+
+Google measured these on its internal clusters, which nobody outside Google can use. We rerun the same experiments on data Google did publish, to check whether the paper's conclusions hold:
+1. **Take a real workload.** Google published a trace of one of its clusters from 2011, and the paper cites it. We take a snapshot of it: every task that was running at one moment.
+2. **Place it with our scheduler.** `borgsim` packs the snapshot with our implementation of Borg's scheduler, the same code the live cell runs. This is how the paper's *Fauxmaster* worked: the real scheduler, run offline on recorded data.
+3. **Use the paper's yardstick.** For each design choice, find the smallest cell the whole workload still fits into. Fewer machines means a better design.
+4. **Compare.** Do we see the same effects as the paper, and of a similar size?
 
 **The data.** `tools/fetch_trace.sh` downloads `machine_events` and the first 6 of the 500 `task_events` files of [`clusterdata-2011-2`](https://github.com/google/cluster-data). That is about 8.5 hours of a month of one cell, ~11 MB. `borgsim` replays the events up to the end of that slice (t = 30,666 s) and keeps every task still running at that moment:
 - 12,480 machines;
@@ -235,7 +242,7 @@ The paper evaluated Borg's scheduler offline, with the Fauxmaster: the real sche
 
 CPU and RAM are normalized in the trace (0 to 1, relative to the largest machine), so results are relative, not cores or GB. The running tasks request 116% of the cell's CPU, because the real Borg overcommits. So the workload needs more machines than the original 12,480, and compaction clones machines to get them, as the paper does.
 
-**Measuring a scheduler: cell compaction.** Every chart in this README reports *machines needed*, computed this way:
+**Measuring a scheduler: cell compaction.** Every chart below reports *machines needed*, computed this way:
 
 ![Cell compaction: take a snapshot, shuffle the machines with a seed, binary-search the smallest cell that fits with at most 0.2% of tasks pending, repeat for 11 seeds and report the 90th percentile](assets/compaction.svg)
 
@@ -258,13 +265,46 @@ Every experiment uses the hybrid policy unless it varies the policy.
 - **Reservations.** The trace's huge `task_usage` table isn't loaded, so reservations come from a usage model shaped like the paper's Fig. 11. Prod tasks use 15–60% of their CPU limit and 40–80% of their RAM limit; non-prod tasks use 30–90% and 50–90%. A 10% safety margin is added. On the trace this makes reservations about 51% of the CPU limits and 70% of the RAM limits.
 - **Synthetic workload.** `--workload synthetic` (the default) generates a cell shaped like the paper's description: mixed machine types, prod services with spreading constraints, and many small batch tasks. It is used for quick runs and the tests.
 
-## 6. Plan B: a live mini Borg cell
+### What we found
 
-`docker compose up` builds one image and starts six containers:
-- the **borgmaster**, on port 8080, which also serves the console and the Plan A results;
+Each number is the 90th percentile over 11 seeds of the machines needed. The full log is in [`results/run_trace.log`](results/run_trace.log).
+
+| Experiment | Our result | Paper |
+|---|---|---|
+| **Scoring policy** (§3.2) | hybrid **16,016** · worst fit 16,315 · best fit 16,494 machines. Hybrid needs **2.9% fewer machines than best fit** and strands the least CPU and RAM | hybrid is 3–5% better than best fit |
+| **Segregating prod and non-prod** (Fig. 5) | **+47.8%** machines with reclamation (9,898 → 14,631); +3.3% with limits only | +20–30% in the median cell |
+| **Bucketed requests** (Fig. 8) | **+36%** with buckets from 1/256 of a machine, +39% from 1/64, +99% from 1/16 | +30–50% in the median cell |
+| **Resource reclamation** (Fig. 10) | **+62%** machines without it (9,898 vs 16,016) | "many more machines"; ~20% of the workload runs in reclaimed resources |
+| **§3.4 speed-ups** (one pass, 20k tasks, 12,480 machines) | 3,394 ms → **17 ms** with all three (about 200× faster); feasibility checks drop from 249.6M to 110k | a pass went from over 3 days to a few hundred seconds |
+| **Hybrid α** (ablation, 3 seeds) | 16,483 machines at α = 0 (best fit) → 15,983 at α = 10; gains level off after 10 | the formula isn't published |
+
+<p>
+<img src="results/policies.png" width="49%" alt="Scoring policy: hybrid 16,016 machines, worst fit 16,315 (+1.9%), best fit 16,494 (+3.0%)">
+<img src="results/segregation.png" width="49%" alt="Shared vs segregated cells: 9,898 vs 14,631 machines with reclamation (+47.8%); 16,016 vs 16,543 with limits only (+3.3%)">
+<img src="results/buckets.png" width="49%" alt="Exact requests 16,016 machines; buckets from 1/256 21,821 (+36.2%), from 1/64 22,299 (+39.2%), from 1/16 31,936 (+99.4%)">
+<img src="results/hybrid_alpha.png" width="49%" alt="Hybrid alpha sweep: 16,483 machines at alpha 0 down to 15,983 at alpha 10 and 15,971 at alpha 20">
+<img src="results/scalability.png" width="98.5%" alt="Scheduler speed-ups: one pass takes 3.4 s with none, 260 ms with equivalence classes, 9.5 s with the score cache alone, 61 ms with relaxed randomization and 17 ms with all three">
+</p>
+
+**What matches.** Every trend in the paper is reproduced:
+- the stranding-aware hybrid beats best fit, by close to the paper's margin;
+- a shared cell beats separate cells, and by a lot only once reclamation is on. That matches the paper's explanation: most of the saving comes from batch work running in resources that prod reserves but doesn't use;
+- exact requests beat buckets, by an overhead inside the paper's range;
+- reclamation saves many machines;
+- equivalence classes and relaxed randomization cut the scheduling work by orders of magnitude.
+
+**What differs, and why.**
+- **The reclamation and segregation gaps are larger than the paper's.** Our reservations come from a usage model, not from measured usage.
+- **The score cache alone is *slower* here** (9.5 s). Our score is a few arithmetic operations, so a hash lookup costs more than recomputing it. Borg's real scoring is far more expensive, so caching pays off there.
+- **Different data.** The paper used 15 internal cells from 2014; we use one public cell from 2011. We compare trends, not exact numbers.
+
+## 6. The live Borg cell
+
+The same scheduler also runs a real, small Borg cell. `docker compose up` builds one image and starts six containers:
+- the **borgmaster**, on port 8080, which also serves the console and the experiment results;
 - five **Borglets**, sized as in the [example](#3-example-one-cell-under-pressure).
 
-Each Borglet runs privileged, with a private cgroup namespace, so that it can create one cgroup per task. The borgmaster runs the `core/` scheduler on its in-memory state.
+Each Borglet runs privileged, with a private cgroup namespace, so that it can create one cgroup per task. The borgmaster keeps the cell's state in memory and runs the `core/` scheduler on it.
 
 **What happens when you submit a job:**
 
@@ -328,7 +368,7 @@ Each Borglet runs privileged, with a private cgroup namespace, so that it can cr
 | watch progress | `1` home · `2` jobs | `show web` | a job row |
 | fail a machine | `3`, select it, `f` | `fail borglet-3` | **fail for 20 s** |
 | see why things happened | `4` log, `/` to filter (`!` inverts) | `log oom` | a toast |
-| see the Plan A results | `5` | `sim` | the **5 sim** tab |
+| see the experiment results | `5` | `sim` | the **5 sim** tab |
 | everything else | `?` help · `p` policy · `space` pause · `z` maximise | `help`, `tour`, `theme amber`, `fx off`, `safe on` | the tabs, status line and key bar |
 
 - **Presets:** eight job templates, one keystroke each. They include a web service, batch analytics, a free-tier crawler, a priority-250 job, an `ssd=true` database, a memory hog that gets OOM-killed, a crashing service and a monitoring agent.
@@ -336,44 +376,7 @@ Each Borglet runs privileged, with a private cgroup namespace, so that it can cr
 - **Help on screen:** the key bar at the bottom always shows what works right now. `NAV` means single keys act; `CMD` means you are typing; `Esc` always goes back one level.
 - **Settings** (`≡` or `:settings`) hold the theme, CRT effects, the boot screen, letter shortcuts and a read-only *safe mode* for demos.
 
-## 7. Results
-
-### Plan A: the paper's experiments on Google's trace
-
-Each number is the 90th percentile over 11 seeds of the machines needed, using the hybrid policy unless the experiment varies it (see [cell compaction](#5-plan-a-replaying-googles-trace)). The full log is in [`results/run_trace.log`](results/run_trace.log). The console's *sim* tab shows the same results.
-
-| Experiment | Our result | Paper |
-|---|---|---|
-| **Scoring policy** (§3.2) | hybrid **16,016** · worst fit 16,315 · best fit 16,494 machines. Hybrid needs **2.9% fewer machines than best fit** and strands the least CPU and RAM | hybrid is 3–5% better than best fit |
-| **Segregating prod and non-prod** (Fig. 5) | **+47.8%** machines with reclamation (9,898 → 14,631); +3.3% with limits only | +20–30% in the median cell |
-| **Bucketed requests** (Fig. 8) | **+36%** with buckets from 1/256 of a machine, +39% from 1/64, +99% from 1/16 | +30–50% in the median cell |
-| **Resource reclamation** (Fig. 10) | **+62%** machines without it (9,898 vs 16,016) | "many more machines"; ~20% of the workload runs in reclaimed resources |
-| **§3.4 speed-ups** (one pass, 20k tasks, 12,480 machines) | 3,394 ms → **17 ms** with all three (about 200× faster); feasibility checks drop from 249.6M to 110k | a pass went from over 3 days to a few hundred seconds |
-| **Hybrid α** (ablation, 3 seeds) | 16,483 machines at α = 0 (best fit) → 15,983 at α = 10; gains level off after 10 | the formula isn't published |
-
-<p>
-<img src="results/policies.png" width="49%" alt="Scoring policy: hybrid 16,016 machines, worst fit 16,315 (+1.9%), best fit 16,494 (+3.0%)">
-<img src="results/segregation.png" width="49%" alt="Shared vs segregated cells: 9,898 vs 14,631 machines with reclamation (+47.8%); 16,016 vs 16,543 with limits only (+3.3%)">
-<img src="results/buckets.png" width="49%" alt="Exact requests 16,016 machines; buckets from 1/256 21,821 (+36.2%), from 1/64 22,299 (+39.2%), from 1/16 31,936 (+99.4%)">
-<img src="results/hybrid_alpha.png" width="49%" alt="Hybrid alpha sweep: 16,483 machines at alpha 0 down to 15,983 at alpha 10 and 15,971 at alpha 20">
-<img src="results/scalability.png" width="98.5%" alt="Scheduler speed-ups: one pass takes 3.4 s with none, 260 ms with equivalence classes, 9.5 s with the score cache alone, 61 ms with relaxed randomization and 17 ms with all three">
-</p>
-
-**What matches.** Every trend in the paper is reproduced:
-- the stranding-aware hybrid beats best fit, by close to the paper's margin;
-- a shared cell beats separate cells, and by a lot only once reclamation is on. That matches the paper's explanation: most of the saving comes from batch work running in resources that prod reserves but doesn't use;
-- exact requests beat buckets, by an overhead inside the paper's range;
-- reclamation saves many machines;
-- equivalence classes and relaxed randomization cut the scheduling work by orders of magnitude.
-
-**What differs, and why.**
-- **The reclamation and segregation gaps are larger than the paper's.** Our reservations come from a usage model, not from measured usage.
-- **The score cache alone is *slower* here** (9.5 s). Our score is a few arithmetic operations, so a hash lookup costs more than recomputing it. Borg's real scoring is far more expensive, so caching pays off there.
-- **Different data.** The paper used 15 internal cells from 2014; we use one public cell from 2011. We compare trends, not exact numbers.
-
-### Plan B: the live cell
-
-`python3 tests/e2e_cell.py` passes all 28 checks against the Docker cell:
+**How it is tested.** `python3 tests/e2e_cell.py` passes all 28 checks against the Docker cell:
 - a delayed job waits for its start time, then starts on time;
 - a priority edit applies in place: the tasks keep their machines and attempts;
 - a CPU edit restarts the tasks with the new spec, and scaling down removes tasks;
@@ -393,17 +396,17 @@ Each number is the 90th percentile over 11 seeds of the machines needed, using t
 - the machine-failure confirmation;
 - the log, sim, pause and themes, and the narrow-screen layout.
 
-## 8. Code map, paper mapping and limitations
+## 7. Code map, paper mapping and limitations
 
 ```text
-core/          the scheduler library (Cell, Task, Machine, Scheduler), shared by both plans
-sim/           Plan A: trace loader, synthetic workloads, compaction, experiments -> borgsim
-master/        Plan B: the borgmaster: REST API, scheduler loop, poller, serves the UI
-borglet/       Plan B: the Borglet: cgroup v2, task lifecycle, built-in workloads
+core/          the scheduler library (Cell, Task, Machine, Scheduler), used by everything
+sim/           the simulator: trace loader, synthetic workloads, compaction, experiments
+master/        the borgmaster: REST API, scheduler loop, Borglet poller, serves the UI
+borglet/       the Borglet: cgroup v2, task lifecycle, built-in workloads
 ui/            the console: ES modules, no build step, vendored JetBrains Mono
 tests/         scheduler unit tests, UI unit tests, browser and end-to-end tests
 tools/         fetch_trace.sh (gets the trace slice), plot.py (CSV -> PNG charts)
-results/       Plan A output: CSV files, charts and the run log
+results/       the experiment results: CSV files, charts and the run log
 assets/        the diagrams in this README
 docker/        the image for the borgmaster and Borglets (see docker-compose.yml)
 third_party/   cpp-httplib and nlohmann/json, both header-only
@@ -430,7 +433,7 @@ third_party/   cpp-httplib and nlohmann/json, both header-only
 - **The trace is normalized and anonymized.** CPU and RAM are scaled from 0 to 1, so the results are relative. The trace's constraint table isn't loaded.
 - **No usage data.** Reclamation uses reservations from a usage model, not the trace's `task_usage` table.
 - **One public cell from 2011**, against the paper's 15 internal cells from 2014: we reproduce trends, not exact numbers.
-- **Plan B has a single, in-memory Borgmaster** (no Paxos). It demonstrates the architecture; it isn't built for scale.
+- **The live cell has a single, in-memory Borgmaster** (no Paxos). It demonstrates the architecture; it isn't built for scale.
 - **cgroups need Linux.** On macOS they exist only inside Docker's Linux VM. Run natively on a Mac, the Borglet falls back to no isolation and says so.
 
 **Reference.** A. Verma, L. Pedrosa, M. Korupolu, D. Oppenheimer, E. Tune, J. Wilkes. *Large-scale cluster management at Google with Borg.* EuroSys 2015.

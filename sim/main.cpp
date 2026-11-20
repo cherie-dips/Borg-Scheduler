@@ -1,4 +1,4 @@
-// borgsim: Plan A. A Fauxmaster-like simulator that runs the Borg scheduler over a workload
+// borgsim: a Fauxmaster-like simulator that runs the Borg scheduler over a workload
 // snapshot and reproduces the paper's scheduling experiments with cell compaction.
 #include <chrono>
 #include <cstdio>

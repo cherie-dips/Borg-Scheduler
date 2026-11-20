@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1000" height="448" viewBox="0 0 1000 448" role="img" aria-labelledby="title desc">
 <title id="title">One scheduling pass</title>
-<desc id="desc">Step 1 orders the pending tasks by priority, round-robin across users; identical tasks are grouped into equivalence classes. Step 2 keeps the machines that satisfy the hard constraints and have room, counting lower-priority tasks as free; it samples machines in random order and stops after 64 feasible ones. Step 3 scores each feasible machine with the policy plus a preemption cost and small bonuses; scores are cached until a machine changes. Step 4 places the task on the best machine, evicting lower-priority tasks if needed; evicted tasks go back to the queue for the next pass.</desc>
+<desc id="desc">Step 1 orders the pending tasks by priority, round-robin across users; identical tasks are grouped into equivalence classes. Step 2 keeps the machines that satisfy the hard constraints and have room, counting lower-priority tasks as free; it samples machines in random order and stops after 64 feasible ones. Step 3 scores each feasible machine with the policy plus a preemption cost and small bonuses; scores are cached until a machine changes. Step 4 places the task on the best machine, evicting lower-priority tasks if needed; evicted tasks go back to the queue for the next pass. In the live cell a Borglet then starts the task; in the simulator it simply counts as placed.</desc>
 <style>
 text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif; fill: #0b0b0b; }
 .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
@@ -63,8 +63,8 @@ text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Ne
 <line x1="754.5" y1="288" x2="971.5" y2="288" stroke="#e4e3dd"/>
 <text x="770" y="311" class="k" style="fill:#0f7a55;font-size:10.5px" >THEN</text>
 <text x="770" y="331" class="h2" style="font-size:13.5px" >Run the task</text>
-<text x="770" y="350" class="s" >Plan B: start it on a Borglet</text>
-<text x="770" y="367" class="s" >Plan A: count it as placed</text>
+<text x="770" y="350" class="s" >a Borglet starts it, or</text>
+<text x="770" y="367" class="s" >the simulator counts it</text>
 <circle cx="780" cy="49" r="11" fill="#2a78d6"/>
 <text x="780" y="53.3" class="k" text-anchor="middle" style="fill:#ffffff;letter-spacing:0" >4</text>
 <text x="799" y="54" class="h2" style="font-size:15px" >Place or preempt</text>

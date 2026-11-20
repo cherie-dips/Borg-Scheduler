@@ -9,7 +9,7 @@ data/
 # Local notes and design docs
 docs/
 
-# Logs from local runs (the Plan A run log stays: the README links to it)
+# Logs from local runs (results/run_trace.log stays: the README links to it)
 *.log
 !results/run_trace.log
 

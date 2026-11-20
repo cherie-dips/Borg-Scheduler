@@ -1,4 +1,4 @@
-// 5 sim: the Plan A simulation results (results/*.csv) as text charts with the paper's claims.
+// 5 sim: the simulation results (results/*.csv) as text charts with the paper's claims.
 
 import { esc, int, num } from '../lib/format.js';
 import { cols, patch } from '../lib/dom.js';
@@ -7,7 +7,7 @@ import { simpleBar } from '../ui/widgets.js';
 export default {
   id: 'sim',
   title: 'sim',
-  panels: [{ id: 'results', title: 'simulation results · Plan A (Google trace 2011, cell compaction)' }],
+  panels: [{ id: 'results', title: 'reproducing Google\'s results · Google trace 2011, cell compaction' }],
   ticks: false,
 
   render(shell, P) {
@@ -19,7 +19,7 @@ export default {
     }
     if (!Object.values(r).some(Boolean)) {
       return patch(p.body, `<div class="empty-state"><p class="es-title">No simulation results yet.</p>
-        <p>Run Plan A, then reload: <b>make sim && ./build/bin/borgsim --workload trace all</b></p>
+        <p>Run the experiments, then reload: <b>make sim && ./build/bin/borgsim --workload trace all</b></p>
         <p>The borgmaster serves the CSV files from <b>results/</b>.</p></div>`);
     }
     const W = Math.max(16, Math.min(60, cols(p.body) - 34));

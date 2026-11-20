@@ -41,7 +41,7 @@ export const api = {
   setPolicy: (policy) => request('POST', '/api/config', { policy }),
   fail: (machineId, seconds) => request('POST', `/api/machines/${machineId}/fail`, { seconds }),
 
-  // Plan A results (CSV files served from results/); null when missing.
+  // Simulation results (CSV files served from results/); null when missing.
   async csv(name) {
     try {
       const res = await fetch(`/results/${name}.csv`, { cache: 'no-store' });

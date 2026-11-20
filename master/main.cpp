@@ -1,11 +1,11 @@
-// borgmaster: Plan B's central controller (§3.1). Single replica, state in memory (no Paxos).
+// borgmaster: the live cell's central controller (§3.1). Single replica, state in memory (no Paxos).
 //
 //  - accepts, edits, reschedules and kills jobs over a REST API (used by the web UI)
 //  - runs the Borg scheduler from core/ every second on the pending queue
 //  - starts/kills tasks on Borglets and polls every Borglet for state and usage (§3.3)
 //  - marks a machine down after missed polls and reschedules its tasks; kills stray tasks
 //    on machines that come back
-//  - serves the terminal UI (ui/) and the Plan A results (results/)
+//  - serves the terminal UI (ui/) and the simulation results (results/)
 //
 // REST API
 //   GET    /api/state                  machines, jobs (status, timestamps), tasks

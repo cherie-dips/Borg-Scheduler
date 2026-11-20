@@ -1,4 +1,4 @@
-// Core data model shared by the simulator (Plan A) and the mini-Borg cell (Plan B).
+// Core data model shared by the simulator (borgsim) and the live cell (borgmaster).
 #pragma once
 
 #include <cstdint>

@@ -20,7 +20,7 @@ export const VIEWS = {
   jobs: { key: '2', title: 'jobs', blurb: 'manage jobs and inspect their tasks' },
   machines: { key: '3', title: 'machines', blurb: 'CPU and RAM per machine, failures' },
   log: { key: '4', title: 'log', blurb: 'every scheduling event, live' },
-  sim: { key: '5', title: 'simulation', blurb: 'Plan A experiment results' },
+  sim: { key: '5', title: 'simulation', blurb: 'the paper\'s experiments, rerun on Google\'s trace' },
 };
 
 // ---- argument resolution -------------------------------------------------------------------
@@ -243,7 +243,7 @@ export const COMMANDS = [
     },
   },
   ...Object.entries(VIEWS).map(([id, v]) => ({
-    name: id, aliases: { home: ['dash', 'top', 'overview'], jobs: ['ls', 'ps'], machines: ['nodes', 'cell'], log: ['events', 'tail'], sim: ['results', 'planA'] }[id],
+    name: id, aliases: { home: ['dash', 'top', 'overview'], jobs: ['ls', 'ps'], machines: ['nodes', 'cell'], log: ['events', 'tail'], sim: ['results', 'experiments'] }[id],
     group: 'views', summary: `go to the ${v.title} view (key ${v.key}): ${v.blurb}`,
     usage: `${id}${id === 'jobs' || id === 'log' || id === 'machines' ? ' [filter]' : ''}`, examples: [id],
     run(ctx, inv) {

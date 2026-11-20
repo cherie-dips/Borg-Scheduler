@@ -93,7 +93,7 @@ export function runBoot(store, mode = 'full', { replay = false } = {}) {
       await wait(220);
       const res = await store.loadResults();
       const n = Object.values(res).filter(Boolean).length;
-      line(n ? 'OK' : 'INFO', n ? `simulation results: ${n} experiment files (Plan A)` : 'no simulation results yet (run borgsim to create them)');
+      line(n ? 'OK' : 'INFO', n ? `simulation results: ${n} experiment files` : 'no simulation results yet (run borgsim to create them)');
       await wait(260);
       line('INFO', 'We are Borg. Your workloads will be assimilated.');
       await wait(quick ? 500 : 700);

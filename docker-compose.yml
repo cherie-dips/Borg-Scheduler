@@ -1,4 +1,4 @@
-# Plan B: a mini Borg cell. 1 Borgmaster + 5 heterogeneous Borglets ("machines").
+# The live mini Borg cell: 1 Borgmaster + 5 heterogeneous Borglets ("machines").
 #   docker compose up --build      then open http://localhost:8080
 #   docker compose stop borglet-3  to kill a machine; docker compose start borglet-3 to bring it back
 
@@ -22,7 +22,7 @@ services:
     image: mini-borg:latest
     ports: ["8080:8080"]
     volumes:
-      - ./results:/opt/borg/results:ro   # Plan A results, shown in the UI's second tab
+      - ./results:/opt/borg/results:ro   # simulation results, shown in the console's sim tab
 
   borglet-1:
     <<: *borglet
