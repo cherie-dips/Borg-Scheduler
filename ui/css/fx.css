@@ -1,0 +1,32 @@
+/* Optional CRT effects. Each one is a class on <html> toggled from settings / `fx`.
+   None of them moves or distorts text, and all stop under prefers-reduced-motion. */
+
+/* faint horizontal scanlines over everything */
+.fx-scanlines body::after {
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 1000;
+  background: repeating-linear-gradient(to bottom, transparent 0 2px, rgb(0 0 0 / .14) 2px 3px);
+}
+.fx-scanlines[data-theme='paper'] body::after {
+  background: repeating-linear-gradient(to bottom, transparent 0 2px, rgb(0 0 0 / .035) 2px 3px);
+}
+
+/* phosphor glow */
+.fx-glow body { text-shadow: 0 0 3px rgb(var(--glow) / .32); }
+.fx-glow .boot .wordmark, .fx-glow .boot .cube { text-shadow: 0 0 6px rgb(var(--glow) / .45); }
+.fx-glow[data-theme='paper'] body, .fx-glow[data-theme='paper'] .boot pre { text-shadow: none; }
+
+/* very slow, very small brightness drift (far below 3 changes per second) */
+.fx-flicker .app, .fx-flicker .boot { animation: crt-flicker 6s ease-in-out infinite; }
+@keyframes crt-flicker { 0%, 100% { opacity: 1; } 47% { opacity: .975; } 52% { opacity: .99; } }
+
+/* vignette and rounded screen corners; no curvature over the data */
+.fx-crt body::before {
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 999;
+  border-radius: 18px; box-shadow: inset 0 0 0 2px rgb(0 0 0 / .65), inset 0 0 90px rgb(0 0 0 / .55);
+}
+.fx-crt[data-theme='paper'] body::before { box-shadow: inset 0 0 0 2px rgb(0 0 0 / .2), inset 0 0 90px rgb(0 0 0 / .12); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  .cursor { opacity: 1; }
+}

@@ -5,8 +5,9 @@
     python3 tests/e2e_cell.py [http://localhost:8080]
 
 It removes every job in the cell first, so don't run it against a cell you care about.
-Checks: spreading, filling the cell, preemption (only lower-priority tasks, lowest first),
-cgroup OOM kills, machine failure -> rescheduling -> recovery.
+Checks: the job lifecycle API (delayed start, edit in place vs restart, scaling, rerun, purge),
+spreading, filling the cell, preemption (only lower-priority tasks), cgroup OOM kills and CPU
+throttling, machine failure -> rescheduling -> recovery.
 """
 import json
 import sys
@@ -38,19 +39,18 @@ def last_event():
     return call("GET", f"/api/events?since={2**62}")["last"]
 
 
-def submit(name, priority, tasks, cpu, ram_mb, workload, type_="service", distinct=False):
+def submit(name, priority, tasks, cpu, ram_mb, workload, type_="service", distinct=False, **extra):
     job = {"name": name, "user": "e2e", "type": type_, "priority": priority, "tasks": tasks,
-           "cpu": cpu, "ram_mb": ram_mb, "workload": workload, "distinct": distinct}
+           "cpu": cpu, "ram_mb": ram_mb, "workload": workload, "distinct": distinct, **extra}
     return call("POST", "/api/jobs", job)["id"]
 
 
 def remove_all_jobs():
     for j in state()["jobs"]:
-        for _ in range(2):  # first DELETE kills a live job, the second removes it
-            try:
-                call("DELETE", f"/api/jobs/{j['id']}")
-            except urllib.error.HTTPError:
-                pass
+        try:
+            call("DELETE", f"/api/jobs/{j['id']}?purge=1")
+        except urllib.error.HTTPError:
+            pass
 
 
 def check(cond, desc):
@@ -80,8 +80,54 @@ def running(s, name):
     return [t for t in tasks_of(s, name) if t["state"] == "running"]
 
 
+def job(s, jid):
+    return next((j for j in s["jobs"] if j["id"] == jid), None)
+
+
 def machine(s, mid):
     return next(m for m in s["machines"] if m["id"] == mid)
+
+
+def lifecycle():
+    print("job lifecycle")
+    jid = submit("e2e-later", 200, 2, 0.1, 32, {"type": "service"}, delay=4)
+    s = state()
+    check(job(s, jid)["status"] == "waiting" and all(t["state"] == "waiting" for t in tasks_of(s, "e2e-later")),
+          "a delayed job waits for its start time")
+    s = wait_for("it starts on time", lambda s: job(s, jid)["status"] == "running" and len(running(s, "e2e-later")) == 2,
+                 timeout=20)
+    before = {t["id"]: (t["machine"], t["attempt"]) for t in running(s, "e2e-later")}
+
+    r = call("PATCH", f"/api/jobs/{jid}", {"priority": 210})
+    check(r["in_place"] == 2 and r["restarted"] == 0, "a priority edit applies in place")
+    after = {t["id"]: (t["machine"], t["attempt"]) for t in running(state(), "e2e-later")}
+    check(after == before, "...and the tasks keep their machines and attempts")
+
+    r = call("PATCH", f"/api/jobs/{jid}", {"cpu": 0.15})
+    check(r["restarted"] == 2, "a resource edit restarts the tasks with the new spec")
+    wait_for("the restarted tasks run again",
+             lambda s: len(running(s, "e2e-later")) == 2
+             and all(t["attempt"] > before[t["id"]][1] for t in running(s, "e2e-later")))
+
+    r = call("PATCH", f"/api/jobs/{jid}", {"tasks": 1})
+    check(r["removed"] == 1 and len(tasks_of(state(), "e2e-later")) == 1, "scaling down removes a task")
+
+    try:
+        submit("e2e-later", 100, 1, 0.1, 32, {"type": "service"})
+        check(False, "duplicate job names are rejected")
+    except urllib.error.HTTPError as e:
+        check(e.code == 400 and "already exists" in e.read().decode(), "duplicate job names are rejected clearly")
+
+    bid = submit("e2e-short", 100, 1, 0.1, 32, {"type": "sleep", "duration": 2}, type_="batch")
+    wait_for("a short batch job completes", lambda s: job(s, bid)["status"] == "completed", timeout=25)
+    r = call("POST", f"/api/jobs/{bid}/reschedule", {})
+    check(r["action"] == "rerun", "rescheduling a finished job runs it again")
+    wait_for("the second run completes",
+             lambda s: job(s, bid)["runs"] == 2 and job(s, bid)["status"] == "completed", timeout=25)
+
+    call("DELETE", f"/api/jobs/{jid}?purge=1")
+    check(job(state(), jid) is None, "purge kills and removes a live job")
+    remove_all_jobs()
 
 
 def main():
@@ -89,6 +135,8 @@ def main():
     remove_all_jobs()
     s = wait_for("at least 3 machines up", lambda s: sum(m["status"] == "up" for m in s["machines"]) >= 3)
     cgroups = all(m["cgroups"] for m in s["machines"] if m["status"] == "up")
+
+    lifecycle()
 
     print("placement")
     submit("e2e-web", 200, 3, 0.25, 64, {"type": "service"}, distinct=True)
@@ -135,7 +183,7 @@ def main():
     s = state()
     task = running(s, "e2e-web")[0]
     mid, tid = task["machine"], task["id"]
-    call("POST", f"/api/machines/{mid}/fail")
+    call("POST", f"/api/machines/{mid}/fail", {"seconds": 15})
     wait_for(f"{machine(s, mid)['name']} marked DOWN after missed polls",
              lambda s: machine(s, mid)["status"] == "down", timeout=15)
     wait_for("its prod task is rescheduled onto another machine",

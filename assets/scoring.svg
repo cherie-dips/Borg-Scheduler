@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="404" viewBox="0 0 1000 404" role="img" aria-labelledby="title desc">
+<title id="title">Which machine gets the task?</title>
+<desc id="desc">A new task needs 20% of a machine&#x27;s CPU and 20% of its RAM. Machine A already uses 75% CPU and 30% RAM, B uses 50% and 50%, C uses 10% and 10%. Worst fit picks C, the emptiest. Best fit picks A, the tightest fit, which leaves A with 5% CPU and 50% RAM: that RAM is stranded. Hybrid picks B, which stays balanced at 30% CPU and 30% RAM free.</desc>
+<style>
+text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif; fill: #0b0b0b; }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+.h { font-size: 16px; font-weight: 700; }
+.h2 { font-size: 14.5px; font-weight: 700; }
+.t { font-size: 13.5px; fill: #3b3a37; }
+.s { font-size: 12.5px; fill: #52514e; }
+.xs { font-size: 11.5px; fill: #52514e; }
+.k { font-size: 11.5px; font-weight: 700; letter-spacing: .07em; }
+.lab { font-size: 12px; fill: #52514e; }
+</style>
+<defs></defs>
+<rect x="0.5" y="0.5" width="999.0" height="403.0" rx="16" fill="#fcfcfb" stroke="#e4e3dd" stroke-width="1" />
+<rect x="30" y="26" width="132" height="26" rx="6" fill="#2a78d6" />
+<text x="96" y="44" class="h2" text-anchor="middle" style="fill:#ffffff;font-size:13px" >new task</text>
+<text x="174" y="44" class="t" >needs 20% of a machine&#x27;s CPU and 20% of its RAM. Where should it go?</text>
+<rect x="30" y="70" width="166" height="292" rx="12" fill="#ffffff" stroke="#e4e3dd" stroke-width="1" />
+<text x="46" y="96" class="h2" >Machine A</text>
+<clipPath id="cACPU"><rect x="64" y="112" width="38" height="150" rx="5"/></clipPath>
+<rect x="64" y="112" width="38" height="150" rx="5" fill="#ffffff" />
+<rect x="64" y="149.5" width="38" height="112.5" rx="0" fill="#cfcdc6" clip-path="url(#cACPU)"/>
+<rect x="64" y="119.5" width="38" height="30.0" rx="0" fill="#2a78d6" clip-path="url(#cACPU)"/>
+<rect x="64" y="112" width="38" height="150" rx="5" fill="none" stroke="#bdbcb4"/>
+<text x="83" y="280" class="xs" text-anchor="middle" style="font-weight:700" >CPU</text>
+<clipPath id="cARAM"><rect x="124" y="112" width="38" height="150" rx="5"/></clipPath>
+<rect x="124" y="112" width="38" height="150" rx="5" fill="#ffffff" />
+<rect x="124" y="217.0" width="38" height="45.0" rx="0" fill="#cfcdc6" clip-path="url(#cARAM)"/>
+<rect x="124" y="187.0" width="38" height="30.0" rx="0" fill="#2a78d6" clip-path="url(#cARAM)"/>
+<rect x="124" y="112" width="38" height="150" rx="5" fill="none" stroke="#bdbcb4"/>
+<text x="143" y="280" class="xs" text-anchor="middle" style="font-weight:700" >RAM</text>
+<rect x="124" y="112" width="38" height="74.99999999999999" fill="#fdf1eb" clip-path="url(#cARAM)"/>
+<text x="143" y="154.0" class="xs" text-anchor="middle" style="font-size:11px;font-weight:700;fill:#b4451a" >stuck</text>
+<text x="46" y="304" class="xs" >left free</text>
+<text x="46" y="322" class="t" style="font-size:13px" >5% CPU · 50% RAM</text>
+<text x="46" y="342" class="xs" style="font-weight:700;fill:#b4451a" >RAM stranded</text>
+<rect x="206" y="70" width="166" height="292" rx="12" fill="#ffffff" stroke="#e4e3dd" stroke-width="1" />
+<text x="222" y="96" class="h2" >Machine B</text>
+<clipPath id="cBCPU"><rect x="240" y="112" width="38" height="150" rx="5"/></clipPath>
+<rect x="240" y="112" width="38" height="150" rx="5" fill="#ffffff" />
+<rect x="240" y="187.0" width="38" height="75.0" rx="0" fill="#cfcdc6" clip-path="url(#cBCPU)"/>
+<rect x="240" y="157.0" width="38" height="30.0" rx="0" fill="#2a78d6" clip-path="url(#cBCPU)"/>
+<rect x="240" y="112" width="38" height="150" rx="5" fill="none" stroke="#bdbcb4"/>
+<text x="259" y="280" class="xs" text-anchor="middle" style="font-weight:700" >CPU</text>
+<clipPath id="cBRAM"><rect x="300" y="112" width="38" height="150" rx="5"/></clipPath>
+<rect x="300" y="112" width="38" height="150" rx="5" fill="#ffffff" />
+<rect x="300" y="187.0" width="38" height="75.0" rx="0" fill="#cfcdc6" clip-path="url(#cBRAM)"/>
+<rect x="300" y="157.0" width="38" height="30.0" rx="0" fill="#2a78d6" clip-path="url(#cBRAM)"/>
+<rect x="300" y="112" width="38" height="150" rx="5" fill="none" stroke="#bdbcb4"/>
+<text x="319" y="280" class="xs" text-anchor="middle" style="font-weight:700" >RAM</text>
+<text x="222" y="304" class="xs" >left free</text>
+<text x="222" y="322" class="t" style="font-size:13px" >30% CPU · 30% RAM</text>
+<text x="222" y="342" class="xs" style="font-weight:700;fill:#1c5cab" >balanced</text>
+<rect x="382" y="70" width="166" height="292" rx="12" fill="#ffffff" stroke="#e4e3dd" stroke-width="1" />
+<text x="398" y="96" class="h2" >Machine C</text>
+<clipPath id="cCCPU"><rect x="416" y="112" width="38" height="150" rx="5"/></clipPath>
+<rect x="416" y="112" width="38" height="150" rx="5" fill="#ffffff" />
+<rect x="416" y="247.0" width="38" height="15.0" rx="0" fill="#cfcdc6" clip-path="url(#cCCPU)"/>
+<rect x="416" y="217.0" width="38" height="30.0" rx="0" fill="#2a78d6" clip-path="url(#cCCPU)"/>
+<rect x="416" y="112" width="38" height="150" rx="5" fill="none" stroke="#bdbcb4"/>
+<text x="435" y="280" class="xs" text-anchor="middle" style="font-weight:700" >CPU</text>
+<clipPath id="cCRAM"><rect x="476" y="112" width="38" height="150" rx="5"/></clipPath>
+<rect x="476" y="112" width="38" height="150" rx="5" fill="#ffffff" />
+<rect x="476" y="247.0" width="38" height="15.0" rx="0" fill="#cfcdc6" clip-path="url(#cCRAM)"/>
+<rect x="476" y="217.0" width="38" height="30.0" rx="0" fill="#2a78d6" clip-path="url(#cCRAM)"/>
+<rect x="476" y="112" width="38" height="150" rx="5" fill="none" stroke="#bdbcb4"/>
+<text x="495" y="280" class="xs" text-anchor="middle" style="font-weight:700" >RAM</text>
+<text x="398" y="304" class="xs" >left free</text>
+<text x="398" y="322" class="t" style="font-size:13px" >70% CPU · 70% RAM</text>
+<text x="398" y="342" class="xs" style="font-weight:700;fill:#52514e" >barely used</text>
+<rect x="30" y="376" width="12" height="12" rx="2.5" fill="#cfcdc6" />
+<text x="48" y="386" class="xs" >already used</text>
+<rect x="156" y="376" width="12" height="12" rx="2.5" fill="#2a78d6" />
+<text x="174" y="386" class="xs" >the new task</text>
+<rect x="282" y="376" width="12" height="12" rx="2.5" fill="#ffffff" stroke="#bdbcb4" stroke-width="1" />
+<text x="300" y="386" class="xs" >free</text>
+<rect x="356" y="376" width="12" height="12" rx="2.5" fill="#fdf1eb" stroke="#eb6834" stroke-width="1" />
+<text x="374" y="386" class="xs" >free but stuck: no CPU left to use it</text>
+<rect x="566" y="70" width="404" height="292" rx="12" fill="#ffffff" stroke="#e4e3dd" stroke-width="1" />
+<text x="586" y="96" class="h2" >Score of each placement (higher wins)</text>
+<text x="770" y="126" class="xs" text-anchor="middle" style="font-weight:700" >A</text>
+<text x="832" y="126" class="xs" text-anchor="middle" style="font-weight:700" >B</text>
+<text x="894" y="126" class="xs" text-anchor="middle" style="font-weight:700" >C</text>
+<text x="942" y="126" class="xs" text-anchor="middle" style="font-weight:700" >picks</text>
+<line x1="586" y1="136" x2="950" y2="136" stroke="#e4e3dd"/>
+<text x="586" y="166" class="t" >Worst fit (E-PVM)</text>
+<text x="770" y="166" class="t mono" text-anchor="middle" style="font-size:12.5px;fill:#898781" >−0.53</text>
+<text x="832" y="166" class="t mono" text-anchor="middle" style="font-size:12.5px;fill:#898781" >−0.33</text>
+<rect x="867" y="149" width="54" height="25" rx="12.5" fill="#e8e7e1" />
+<text x="894" y="166" class="t mono" text-anchor="middle" style="font-size:12.5px;font-weight:700;fill:#0b0b0b" >−0.07</text>
+<text x="942" y="166" class="h2" text-anchor="middle" style="font-size:15px" >C</text>
+<line x1="586" y1="182" x2="950" y2="182" stroke="#f0efea"/>
+<text x="586" y="206" class="t" >Best fit</text>
+<rect x="743" y="189" width="54" height="25" rx="12.5" fill="#e8e7e1" />
+<text x="770" y="206" class="t mono" text-anchor="middle" style="font-size:12.5px;font-weight:700;fill:#0b0b0b" >−0.55</text>
+<text x="832" y="206" class="t mono" text-anchor="middle" style="font-size:12.5px;fill:#898781" >−0.60</text>
+<text x="894" y="206" class="t mono" text-anchor="middle" style="font-size:12.5px;fill:#898781" >−1.40</text>
+<text x="942" y="206" class="h2" text-anchor="middle" style="font-size:15px" >A</text>
+<line x1="586" y1="222" x2="950" y2="222" stroke="#f0efea"/>
+<text x="586" y="246" class="t" style="font-weight:700" >Hybrid (ours)</text>
+<text x="770" y="246" class="t mono" text-anchor="middle" style="font-size:12.5px;fill:#898781" >−5.05</text>
+<rect x="805" y="229" width="54" height="25" rx="12.5" fill="#2a78d6" />
+<text x="832" y="246" class="t mono" text-anchor="middle" style="font-size:12.5px;font-weight:700;fill:#ffffff" >−0.60</text>
+<text x="894" y="246" class="t mono" text-anchor="middle" style="font-size:12.5px;fill:#898781" >−1.40</text>
+<text x="942" y="246" class="h2" text-anchor="middle" style="font-size:15px" >B</text>
+<text x="586" y="314" class="xs mono" style="font-size:12px;fill:#3b3a37" >hybrid = −(free CPU + free RAM)</text>
+<text x="651" y="334" class="xs mono" style="font-size:12px;fill:#3b3a37" >− 10 × |free CPU − free RAM|</text>
+</svg>

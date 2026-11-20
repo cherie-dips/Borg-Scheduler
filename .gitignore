@@ -1,4 +1,39 @@
+# Build output (make)
 build/
+*.o
+*.d
+
+# The Google trace slice: large, and tools/fetch_trace.sh downloads it again
 data/
+
+# Local notes and design docs
+docs/
+
+# Logs from local runs (the Plan A run log stays: the README links to it)
+*.log
+!results/run_trace.log
+
+# Python
 __pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Node
+node_modules/
+
+# Local environment and secrets
+.env
+.env.*
+
+# Editors and IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
 .DS_Store
+._*
+Thumbs.db

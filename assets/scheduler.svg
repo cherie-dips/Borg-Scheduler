@@ -1,0 +1,142 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="448" viewBox="0 0 1000 448" role="img" aria-labelledby="title desc">
+<title id="title">One scheduling pass</title>
+<desc id="desc">Step 1 orders the pending tasks by priority, round-robin across users; identical tasks are grouped into equivalence classes. Step 2 keeps the machines that satisfy the hard constraints and have room, counting lower-priority tasks as free; it samples machines in random order and stops after 64 feasible ones. Step 3 scores each feasible machine with the policy plus a preemption cost and small bonuses; scores are cached until a machine changes. Step 4 places the task on the best machine, evicting lower-priority tasks if needed; evicted tasks go back to the queue for the next pass.</desc>
+<style>
+text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif; fill: #0b0b0b; }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+.h { font-size: 16px; font-weight: 700; }
+.h2 { font-size: 14.5px; font-weight: 700; }
+.t { font-size: 13.5px; fill: #3b3a37; }
+.s { font-size: 12.5px; fill: #52514e; }
+.xs { font-size: 11.5px; fill: #52514e; }
+.k { font-size: 11.5px; font-weight: 700; letter-spacing: .07em; }
+.lab { font-size: 12px; fill: #52514e; }
+</style>
+<defs><marker id="m6f6e69" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7.5" markerHeight="7.5" orient="auto-start-reverse"><path d="M0.5,0.8 L9,5 L0.5,9.2 L2.6,5 z" fill="#6f6e69"/></marker><marker id="m898781" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7.5" markerHeight="7.5" orient="auto-start-reverse"><path d="M0.5,0.8 L9,5 L0.5,9.2 L2.6,5 z" fill="#898781"/></marker></defs>
+<rect x="0.5" y="0.5" width="999.0" height="447.0" rx="16" fill="#fcfcfb" stroke="#e4e3dd" stroke-width="1" />
+<rect x="28" y="22" width="218" height="362" rx="12" fill="#ffffff" stroke="#e4e3dd" stroke-width="1" />
+<path d="M28.5,288 H245.5 V371.5 a12,12 0 0 1 -12,12 H40.5 a12,12 0 0 1 -12,-12 Z" fill="#f1effc"/>
+<line x1="28.5" y1="288" x2="245.5" y2="288" stroke="#e4e3dd"/>
+<text x="44" y="311" class="k" style="fill:#4a3aa7;font-size:10.5px" >§3.4 SPEED-UP</text>
+<text x="44" y="331" class="h2" style="font-size:13.5px" >Equivalence classes</text>
+<text x="44" y="350" class="s" >identical tasks share one</text>
+<text x="44" y="367" class="s" >filter-and-score pass</text>
+<circle cx="54" cy="49" r="11" fill="#2a78d6"/>
+<text x="54" y="53.3" class="k" text-anchor="middle" style="fill:#ffffff;letter-spacing:0" >1</text>
+<text x="73" y="54" class="h2" style="font-size:15px" >Order the queue</text>
+<text x="44" y="208" class="t" style="font-size:13px" >highest priority first</text>
+<text x="44" y="227" class="t" style="font-size:13px" >round-robin across users</text>
+<text x="44" y="246" class="t" style="font-size:13px" >within one priority</text>
+<path d="M250,127 L266,127" fill="none" stroke="#6f6e69" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#m6f6e69)"/>
+<rect x="270" y="22" width="218" height="362" rx="12" fill="#ffffff" stroke="#e4e3dd" stroke-width="1" />
+<path d="M270.5,288 H487.5 V371.5 a12,12 0 0 1 -12,12 H282.5 a12,12 0 0 1 -12,-12 Z" fill="#f1effc"/>
+<line x1="270.5" y1="288" x2="487.5" y2="288" stroke="#e4e3dd"/>
+<text x="286" y="311" class="k" style="fill:#4a3aa7;font-size:10.5px" >§3.4 SPEED-UP</text>
+<text x="286" y="331" class="h2" style="font-size:13.5px" >Relaxed randomization</text>
+<text x="286" y="350" class="s" >random order; stop after</text>
+<text x="286" y="367" class="s" >64 feasible machines</text>
+<circle cx="296" cy="49" r="11" fill="#2a78d6"/>
+<text x="296" y="53.3" class="k" text-anchor="middle" style="fill:#ffffff;letter-spacing:0" >2</text>
+<text x="315" y="54" class="h2" style="font-size:15px" >Filter machines</text>
+<text x="286" y="208" class="t" style="font-size:13px" >hard constraints match</text>
+<text x="286" y="227" class="t" style="font-size:13px" >distinct machines, if asked</text>
+<text x="286" y="246" class="t" style="font-size:13px" >room left, counting lower</text>
+<text x="286" y="265" class="t" style="font-size:13px" >priorities as free</text>
+<path d="M492,127 L508,127" fill="none" stroke="#6f6e69" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#m6f6e69)"/>
+<rect x="512" y="22" width="218" height="362" rx="12" fill="#ffffff" stroke="#e4e3dd" stroke-width="1" />
+<path d="M512.5,288 H729.5 V371.5 a12,12 0 0 1 -12,12 H524.5 a12,12 0 0 1 -12,-12 Z" fill="#f1effc"/>
+<line x1="512.5" y1="288" x2="729.5" y2="288" stroke="#e4e3dd"/>
+<text x="528" y="311" class="k" style="fill:#4a3aa7;font-size:10.5px" >§3.4 SPEED-UP</text>
+<text x="528" y="331" class="h2" style="font-size:13.5px" >Score cache</text>
+<text x="528" y="350" class="s" >reuse a score until that</text>
+<text x="528" y="367" class="s" >machine changes</text>
+<circle cx="538" cy="49" r="11" fill="#2a78d6"/>
+<text x="538" y="53.3" class="k" text-anchor="middle" style="fill:#ffffff;letter-spacing:0" >3</text>
+<text x="557" y="54" class="h2" style="font-size:15px" >Score each one</text>
+<text x="528" y="208" class="t" style="font-size:13px" >policy term (hybrid)</text>
+<text x="528" y="227" class="t" style="font-size:13px" >− cost of evictions</text>
+<text x="528" y="246" class="t" style="font-size:13px" >+ spread a job out</text>
+<text x="528" y="265" class="t" style="font-size:13px" >+ package already there</text>
+<path d="M734,127 L750,127" fill="none" stroke="#6f6e69" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#m6f6e69)"/>
+<rect x="754" y="22" width="218" height="362" rx="12" fill="#ffffff" stroke="#e4e3dd" stroke-width="1" />
+<path d="M754.5,288 H971.5 V371.5 a12,12 0 0 1 -12,12 H766.5 a12,12 0 0 1 -12,-12 Z" fill="#ecf8f2"/>
+<line x1="754.5" y1="288" x2="971.5" y2="288" stroke="#e4e3dd"/>
+<text x="770" y="311" class="k" style="fill:#0f7a55;font-size:10.5px" >THEN</text>
+<text x="770" y="331" class="h2" style="font-size:13.5px" >Run the task</text>
+<text x="770" y="350" class="s" >Plan B: start it on a Borglet</text>
+<text x="770" y="367" class="s" >Plan A: count it as placed</text>
+<circle cx="780" cy="49" r="11" fill="#2a78d6"/>
+<text x="780" y="53.3" class="k" text-anchor="middle" style="fill:#ffffff;letter-spacing:0" >4</text>
+<text x="799" y="54" class="h2" style="font-size:15px" >Place or preempt</text>
+<text x="770" y="208" class="t" style="font-size:13px" >best score wins</text>
+<text x="770" y="227" class="t" style="font-size:13px" >short on room? evict the</text>
+<text x="770" y="246" class="t" style="font-size:13px" >lowest priority first</text>
+<text x="770" y="265" class="t" style="font-size:13px" >prod never preempts prod</text>
+<rect x="44" y="78" width="186" height="21" rx="5" fill="#dbe9fb" />
+<rect x="44" y="78" width="5" height="21" rx="2" fill="#2a78d6" />
+<text x="57" y="93" class="xs" style="font-size:12px;fill:#0b0b0b" >payments</text>
+<text x="222" y="93" class="xs mono" text-anchor="end" style="font-size:11px" >prio 250</text>
+<rect x="44" y="105" width="186" height="21" rx="5" fill="#dbe9fb" />
+<rect x="44" y="105" width="5" height="21" rx="2" fill="#2a78d6" />
+<text x="57" y="120" class="xs" style="font-size:12px;fill:#0b0b0b" >web-frontend</text>
+<text x="222" y="120" class="xs mono" text-anchor="end" style="font-size:11px" >prio 200</text>
+<rect x="44" y="132" width="186" height="21" rx="5" fill="#d6f1e5" />
+<rect x="44" y="132" width="5" height="21" rx="2" fill="#1baf7a" />
+<text x="57" y="147" class="xs" style="font-size:12px;fill:#0b0b0b" >analytics</text>
+<text x="222" y="147" class="xs mono" text-anchor="end" style="font-size:11px" >prio 100</text>
+<rect x="44" y="159" width="186" height="21" rx="5" fill="#ecebe6" />
+<rect x="44" y="159" width="5" height="21" rx="2" fill="#a9a79f" />
+<text x="57" y="174" class="xs" style="font-size:12px;fill:#0b0b0b" >crawler</text>
+<text x="222" y="174" class="xs mono" text-anchor="end" style="font-size:11px" >prio 0</text>
+<rect x="292" y="80" width="22" height="24" rx="4" fill="#f1f0ec" stroke="#dddcd5" stroke-width="1" />
+<path d="M299,88 l8,8 M307,88 l-8,8" stroke="#bdbcb4" stroke-width="1.4" stroke-linecap="round"/>
+<rect x="322" y="80" width="22" height="24" rx="4" fill="#ecf8f2" stroke="#1baf7a" stroke-width="1.3" />
+<rect x="352" y="80" width="22" height="24" rx="4" fill="#ecf8f2" stroke="#1baf7a" stroke-width="1.3" />
+<rect x="382" y="80" width="22" height="24" rx="4" fill="#f1f0ec" stroke="#dddcd5" stroke-width="1" />
+<path d="M389,88 l8,8 M397,88 l-8,8" stroke="#bdbcb4" stroke-width="1.4" stroke-linecap="round"/>
+<rect x="412" y="80" width="22" height="24" rx="4" fill="#ecf8f2" stroke="#1baf7a" stroke-width="1.3" />
+<rect x="442" y="80" width="22" height="24" rx="4" fill="#f1f0ec" stroke="#dddcd5" stroke-width="1" />
+<path d="M449,88 l8,8 M457,88 l-8,8" stroke="#bdbcb4" stroke-width="1.4" stroke-linecap="round"/>
+<rect x="292" y="112" width="22" height="24" rx="4" fill="#f1f0ec" stroke="#dddcd5" stroke-width="1" />
+<path d="M299,120 l8,8 M307,120 l-8,8" stroke="#bdbcb4" stroke-width="1.4" stroke-linecap="round"/>
+<rect x="322" y="112" width="22" height="24" rx="4" fill="#ecf8f2" stroke="#1baf7a" stroke-width="1.3" />
+<rect x="352" y="112" width="22" height="24" rx="4" fill="#ecf8f2" stroke="#1baf7a" stroke-width="1.3" />
+<rect x="382" y="112" width="22" height="24" rx="4" fill="#f1f0ec" stroke="#dddcd5" stroke-width="1" />
+<path d="M389,120 l8,8 M397,120 l-8,8" stroke="#bdbcb4" stroke-width="1.4" stroke-linecap="round"/>
+<rect x="412" y="112" width="22" height="24" rx="4" fill="#f1f0ec" stroke="#dddcd5" stroke-width="1" />
+<path d="M419,120 l8,8 M427,120 l-8,8" stroke="#bdbcb4" stroke-width="1.4" stroke-linecap="round"/>
+<rect x="442" y="112" width="22" height="24" rx="4" fill="#ecf8f2" stroke="#1baf7a" stroke-width="1.3" />
+<rect x="292" y="144" width="22" height="24" rx="4" fill="#f1f0ec" stroke="#dddcd5" stroke-width="1" />
+<path d="M299,152 l8,8 M307,152 l-8,8" stroke="#bdbcb4" stroke-width="1.4" stroke-linecap="round"/>
+<rect x="322" y="144" width="22" height="24" rx="4" fill="#ecf8f2" stroke="#1baf7a" stroke-width="1.3" />
+<rect x="352" y="144" width="22" height="24" rx="4" fill="#f1f0ec" stroke="#dddcd5" stroke-width="1" />
+<path d="M359,152 l8,8 M367,152 l-8,8" stroke="#bdbcb4" stroke-width="1.4" stroke-linecap="round"/>
+<rect x="382" y="144" width="22" height="24" rx="4" fill="#f1f0ec" stroke="#dddcd5" stroke-width="1" />
+<path d="M389,152 l8,8 M397,152 l-8,8" stroke="#bdbcb4" stroke-width="1.4" stroke-linecap="round"/>
+<rect x="412" y="144" width="22" height="24" rx="4" fill="#ecf8f2" stroke="#1baf7a" stroke-width="1.3" />
+<rect x="442" y="144" width="22" height="24" rx="4" fill="#ecf8f2" stroke="#1baf7a" stroke-width="1.3" />
+<rect x="536" y="120" width="20" height="52" rx="3" fill="#cfcdc6" />
+<rect x="565" y="138" width="20" height="34" rx="3" fill="#cfcdc6" />
+<rect x="594" y="102" width="20" height="70" rx="3" fill="#2a78d6" />
+<rect x="623" y="128" width="20" height="44" rx="3" fill="#cfcdc6" />
+<rect x="652" y="146" width="20" height="26" rx="3" fill="#cfcdc6" />
+<rect x="681" y="114" width="20" height="58" rx="3" fill="#cfcdc6" />
+<line x1="530" y1="172" x2="707" y2="172" stroke="#c3c2b7" stroke-width="1"/>
+<text x="604" y="93" class="xs" text-anchor="middle" style="font-weight:700;fill:#1c5cab" >best</text>
+<rect x="784" y="76" width="78" height="98" rx="7" fill="#ffffff" stroke="#9d9c95" stroke-width="1.3" />
+<text x="823" y="190" class="xs" text-anchor="middle" >a machine</text>
+<rect x="790" y="142" width="66" height="26" rx="4" fill="#dbe9fb" stroke="#2a78d6" stroke-width="1" />
+<text x="823" y="159" class="xs" text-anchor="middle" style="font-size:11px;fill:#1c5cab" >prod</text>
+<rect x="790" y="112" width="66" height="30" rx="4" fill="#2a78d6" />
+<text x="823" y="132" class="xs" text-anchor="middle" style="font-size:11.5px;fill:#ffffff;font-weight:700" >new</text>
+<rect x="790" y="82" width="66" height="26" rx="4" fill="none" stroke="#a9a79f" stroke-width="1.2" stroke-dasharray="3 3"/>
+<rect x="888" y="82" width="66" height="26" rx="4" fill="#ecebe6" stroke="#a9a79f" stroke-width="1" />
+<text x="921" y="99" class="xs" text-anchor="middle" style="font-size:11px" >free tier</text>
+<path d="M858,95 L884,95" fill="none" stroke="#898781" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#m898781)"/>
+<text x="921" y="128" class="xs" text-anchor="middle" style="font-weight:700" >evicted</text>
+<text x="921" y="144" class="xs" text-anchor="middle" >back to the</text>
+<text x="921" y="159" class="xs" text-anchor="middle" >queue</text>
+<path d="M863.0,387 V418 H137.0 V391" fill="none" stroke="#6f6e69" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#m6f6e69)"/>
+<rect x="318" y="405" width="364" height="26" rx="13" fill="#fcfcfb" />
+<text x="500" y="422.5" class="s" text-anchor="middle" >evicted tasks go back to the queue; the next pass retries them</text>
+</svg>

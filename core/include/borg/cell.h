@@ -16,6 +16,8 @@ public:
     TaskId add_task(Task t);
     // Unplaces the task if needed and forgets it.
     void remove_task(TaskId id);
+    // An id for a task that is created now but enters the cell later (e.g. a delayed start).
+    TaskId reserve_id() { return next_id_++; }
 
     void place(TaskId id, MachineId m);
     // Takes the task off its machine and puts it back in the pending state.

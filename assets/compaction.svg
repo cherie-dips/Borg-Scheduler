@@ -1,0 +1,184 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="350" viewBox="0 0 1000 350" role="img" aria-labelledby="title desc">
+<title id="title">Cell compaction</title>
+<desc id="desc">Step 1 takes a snapshot of every task running at one moment in the trace. Step 2 shuffles the machines with a seed. Step 3 binary-searches the smallest number of machines n such that the scheduler packs all tasks onto the first n machines with at most 0.2% left pending. Step 4 repeats this for 11 seeds and reports the 90th percentile.</desc>
+<style>
+text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif; fill: #0b0b0b; }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+.h { font-size: 16px; font-weight: 700; }
+.h2 { font-size: 14.5px; font-weight: 700; }
+.t { font-size: 13.5px; fill: #3b3a37; }
+.s { font-size: 12.5px; fill: #52514e; }
+.xs { font-size: 11.5px; fill: #52514e; }
+.k { font-size: 11.5px; font-weight: 700; letter-spacing: .07em; }
+.lab { font-size: 12px; fill: #52514e; }
+</style>
+<defs><marker id="m6f6e69" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7.5" markerHeight="7.5" orient="auto-start-reverse"><path d="M0.5,0.8 L9,5 L0.5,9.2 L2.6,5 z" fill="#6f6e69"/></marker></defs>
+<rect x="0.5" y="0.5" width="999.0" height="349.0" rx="16" fill="#fcfcfb" stroke="#e4e3dd" stroke-width="1" />
+<rect x="28" y="22" width="218" height="306" rx="12" fill="#ffffff" stroke="#e4e3dd" stroke-width="1" />
+<circle cx="54" cy="49" r="11" fill="#2a78d6"/>
+<text x="54" y="53.3" class="k" text-anchor="middle" style="fill:#ffffff;letter-spacing:0" >1</text>
+<text x="73" y="54" class="h2" style="font-size:15px" >Take a snapshot</text>
+<text x="44" y="260" class="t" style="font-size:13px" >every task running at one</text>
+<text x="44" y="279" class="t" style="font-size:13px" >moment: 144,266 tasks on</text>
+<text x="44" y="298" class="t" style="font-size:13px" >12,480 machines</text>
+<path d="M250,132 L266,132" fill="none" stroke="#6f6e69" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#m6f6e69)"/>
+<rect x="270" y="22" width="218" height="306" rx="12" fill="#ffffff" stroke="#e4e3dd" stroke-width="1" />
+<circle cx="296" cy="49" r="11" fill="#2a78d6"/>
+<text x="296" y="53.3" class="k" text-anchor="middle" style="fill:#ffffff;letter-spacing:0" >2</text>
+<text x="315" y="54" class="h2" style="font-size:15px" >Shuffle machines</text>
+<text x="286" y="260" class="t" style="font-size:13px" >a new random order per</text>
+<text x="286" y="279" class="t" style="font-size:13px" >seed, so a smaller cell</text>
+<text x="286" y="298" class="t" style="font-size:13px" >keeps the same mix</text>
+<path d="M492,132 L508,132" fill="none" stroke="#6f6e69" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#m6f6e69)"/>
+<rect x="512" y="22" width="218" height="306" rx="12" fill="#ffffff" stroke="#e4e3dd" stroke-width="1" />
+<circle cx="538" cy="49" r="11" fill="#2a78d6"/>
+<text x="538" y="53.3" class="k" text-anchor="middle" style="fill:#ffffff;letter-spacing:0" >3</text>
+<text x="557" y="54" class="h2" style="font-size:15px" >Shrink the cell</text>
+<text x="528" y="260" class="t" style="font-size:13px" >binary search on n: pack all</text>
+<text x="528" y="279" class="t" style="font-size:13px" >tasks onto the first n; it fits</text>
+<text x="528" y="298" class="t" style="font-size:13px" >if ≤ 0.2% stay pending</text>
+<path d="M734,132 L750,132" fill="none" stroke="#6f6e69" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#m6f6e69)"/>
+<rect x="754" y="22" width="218" height="306" rx="12" fill="#ffffff" stroke="#e4e3dd" stroke-width="1" />
+<circle cx="780" cy="49" r="11" fill="#2a78d6"/>
+<text x="780" y="53.3" class="k" text-anchor="middle" style="fill:#ffffff;letter-spacing:0" >4</text>
+<text x="799" y="54" class="h2" style="font-size:15px" >11 seeds → p90</text>
+<text x="770" y="260" class="t" style="font-size:13px" >report the 90th percentile:</text>
+<text x="770" y="279" class="t" style="font-size:13px" >the “machines needed” in</text>
+<text x="770" y="298" class="t" style="font-size:13px" >every chart below</text>
+<rect x="46.0" y="86" width="81.9" height="8" rx="4" fill="#d6d5ce" />
+<rect x="64.2" y="103" width="154.7" height="8" rx="4" fill="#2a78d6" />
+<rect x="100.6" y="120" width="58.24" height="8" rx="4" fill="#2a78d6" />
+<rect x="55.1" y="137" width="45.5" height="8" rx="4" fill="#d6d5ce" />
+<rect x="137.0" y="154" width="91.0" height="8" rx="4" fill="#2a78d6" />
+<rect x="118.8" y="171" width="72.8" height="8" rx="4" fill="#2a78d6" />
+<rect x="173.39999999999998" y="188" width="50.96000000000001" height="8" rx="4" fill="#d6d5ce" />
+<line x1="146.10000000000002" y1="80" x2="146.10000000000002" y2="210" stroke="#eb6834" stroke-width="1.6" stroke-dasharray="4 3"/>
+<text x="146.10000000000002" y="226" class="xs" text-anchor="middle" style="font-weight:700;fill:#b4451a" >snapshot</text>
+<text x="46" y="226" class="xs" style="fill:#898781" >time →</text>
+<path d="M302,112 C302,140 380,140 380,168" fill="none" stroke="#cfcdc6" stroke-width="1.2"/>
+<path d="M328,112 C328,140 328,140 328,168" fill="none" stroke="#cfcdc6" stroke-width="1.2"/>
+<path d="M354,112 C354,140 432,140 432,168" fill="none" stroke="#cfcdc6" stroke-width="1.2"/>
+<path d="M380,112 C380,140 458,140 458,168" fill="none" stroke="#cfcdc6" stroke-width="1.2"/>
+<path d="M406,112 C406,140 302,140 302,168" fill="none" stroke="#cfcdc6" stroke-width="1.2"/>
+<path d="M432,112 C432,140 406,140 406,168" fill="none" stroke="#cfcdc6" stroke-width="1.2"/>
+<path d="M458,112 C458,140 354,140 354,168" fill="none" stroke="#cfcdc6" stroke-width="1.2"/>
+<rect x="291" y="88" width="22" height="24" rx="4" fill="#ffffff" stroke="#bdbcb4" stroke-width="1.2" />
+<text x="302" y="104.5" class="xs" text-anchor="middle" style="font-size:11px;font-weight:700" >1</text>
+<rect x="291" y="168" width="22" height="24" rx="4" fill="#ecf8f2" stroke="#1baf7a" stroke-width="1.2" />
+<text x="302" y="184.5" class="xs" text-anchor="middle" style="font-size:11px;font-weight:700" >5</text>
+<rect x="317" y="88" width="22" height="24" rx="4" fill="#ffffff" stroke="#bdbcb4" stroke-width="1.2" />
+<text x="328" y="104.5" class="xs" text-anchor="middle" style="font-size:11px;font-weight:700" >2</text>
+<rect x="317" y="168" width="22" height="24" rx="4" fill="#ecf8f2" stroke="#1baf7a" stroke-width="1.2" />
+<text x="328" y="184.5" class="xs" text-anchor="middle" style="font-size:11px;font-weight:700" >2</text>
+<rect x="343" y="88" width="22" height="24" rx="4" fill="#ffffff" stroke="#bdbcb4" stroke-width="1.2" />
+<text x="354" y="104.5" class="xs" text-anchor="middle" style="font-size:11px;font-weight:700" >3</text>
+<rect x="343" y="168" width="22" height="24" rx="4" fill="#ecf8f2" stroke="#1baf7a" stroke-width="1.2" />
+<text x="354" y="184.5" class="xs" text-anchor="middle" style="font-size:11px;font-weight:700" >7</text>
+<rect x="369" y="88" width="22" height="24" rx="4" fill="#ffffff" stroke="#bdbcb4" stroke-width="1.2" />
+<text x="380" y="104.5" class="xs" text-anchor="middle" style="font-size:11px;font-weight:700" >4</text>
+<rect x="369" y="168" width="22" height="24" rx="4" fill="#ecf8f2" stroke="#1baf7a" stroke-width="1.2" />
+<text x="380" y="184.5" class="xs" text-anchor="middle" style="font-size:11px;font-weight:700" >1</text>
+<rect x="395" y="88" width="22" height="24" rx="4" fill="#ffffff" stroke="#bdbcb4" stroke-width="1.2" />
+<text x="406" y="104.5" class="xs" text-anchor="middle" style="font-size:11px;font-weight:700" >5</text>
+<rect x="395" y="168" width="22" height="24" rx="4" fill="#ecf8f2" stroke="#1baf7a" stroke-width="1.2" />
+<text x="406" y="184.5" class="xs" text-anchor="middle" style="font-size:11px;font-weight:700" >6</text>
+<rect x="421" y="88" width="22" height="24" rx="4" fill="#ffffff" stroke="#bdbcb4" stroke-width="1.2" />
+<text x="432" y="104.5" class="xs" text-anchor="middle" style="font-size:11px;font-weight:700" >6</text>
+<rect x="421" y="168" width="22" height="24" rx="4" fill="#ecf8f2" stroke="#1baf7a" stroke-width="1.2" />
+<text x="432" y="184.5" class="xs" text-anchor="middle" style="font-size:11px;font-weight:700" >3</text>
+<rect x="447" y="88" width="22" height="24" rx="4" fill="#ffffff" stroke="#bdbcb4" stroke-width="1.2" />
+<text x="458" y="104.5" class="xs" text-anchor="middle" style="font-size:11px;font-weight:700" >7</text>
+<rect x="447" y="168" width="22" height="24" rx="4" fill="#ecf8f2" stroke="#1baf7a" stroke-width="1.2" />
+<text x="458" y="184.5" class="xs" text-anchor="middle" style="font-size:11px;font-weight:700" >4</text>
+<text x="380.0" y="220" class="xs mono" text-anchor="middle" style="font-size:11px" >seed 1000, 1001, …</text>
+<rect x="528.0" y="82" width="10" height="16" rx="2.5" fill="#2a78d6" />
+<rect x="540.5" y="82" width="10" height="16" rx="2.5" fill="#2a78d6" />
+<rect x="553.0" y="82" width="10" height="16" rx="2.5" fill="#2a78d6" />
+<rect x="565.5" y="82" width="10" height="16" rx="2.5" fill="#2a78d6" />
+<rect x="578.0" y="82" width="10" height="16" rx="2.5" fill="#2a78d6" />
+<rect x="590.5" y="82" width="10" height="16" rx="2.5" fill="#2a78d6" />
+<rect x="603.0" y="82" width="10" height="16" rx="2.5" fill="#2a78d6" />
+<rect x="615.5" y="82" width="10" height="16" rx="2.5" fill="#2a78d6" />
+<rect x="628.0" y="82" width="10" height="16" rx="2.5" fill="#2a78d6" />
+<rect x="640.5" y="82" width="10" height="16" rx="2.5" fill="#2a78d6" />
+<rect x="653.0" y="82" width="10" height="16" rx="2.5" fill="#2a78d6" />
+<rect x="665.5" y="82" width="10" height="16" rx="2.5" fill="#2a78d6" />
+<text x="684" y="94.5" class="xs mono" style="font-size:11px" >n=12</text>
+<text x="716" y="94.5" class="xs" style="font-weight:700;fill:#0f7a55;font-size:13px" >✓</text>
+<rect x="528.0" y="106" width="10" height="16" rx="2.5" fill="#eb6834" />
+<rect x="540.5" y="106" width="10" height="16" rx="2.5" fill="#eb6834" />
+<rect x="553.0" y="106" width="10" height="16" rx="2.5" fill="#eb6834" />
+<rect x="565.5" y="106" width="10" height="16" rx="2.5" fill="#eb6834" />
+<rect x="578.0" y="106" width="10" height="16" rx="2.5" fill="#eb6834" />
+<rect x="590.5" y="106" width="10" height="16" rx="2.5" fill="#eb6834" />
+<rect x="603.0" y="106" width="10" height="16" rx="2.5" fill="#ecebe6" />
+<rect x="615.5" y="106" width="10" height="16" rx="2.5" fill="#ecebe6" />
+<rect x="628.0" y="106" width="10" height="16" rx="2.5" fill="#ecebe6" />
+<rect x="640.5" y="106" width="10" height="16" rx="2.5" fill="#ecebe6" />
+<rect x="653.0" y="106" width="10" height="16" rx="2.5" fill="#ecebe6" />
+<rect x="665.5" y="106" width="10" height="16" rx="2.5" fill="#ecebe6" />
+<text x="684" y="118.5" class="xs mono" style="font-size:11px" >n=6</text>
+<text x="716" y="118.5" class="xs" style="font-weight:700;fill:#b4451a;font-size:13px" >✗</text>
+<rect x="528.0" y="130" width="10" height="16" rx="2.5" fill="#2a78d6" />
+<rect x="540.5" y="130" width="10" height="16" rx="2.5" fill="#2a78d6" />
+<rect x="553.0" y="130" width="10" height="16" rx="2.5" fill="#2a78d6" />
+<rect x="565.5" y="130" width="10" height="16" rx="2.5" fill="#2a78d6" />
+<rect x="578.0" y="130" width="10" height="16" rx="2.5" fill="#2a78d6" />
+<rect x="590.5" y="130" width="10" height="16" rx="2.5" fill="#2a78d6" />
+<rect x="603.0" y="130" width="10" height="16" rx="2.5" fill="#2a78d6" />
+<rect x="615.5" y="130" width="10" height="16" rx="2.5" fill="#2a78d6" />
+<rect x="628.0" y="130" width="10" height="16" rx="2.5" fill="#2a78d6" />
+<rect x="640.5" y="130" width="10" height="16" rx="2.5" fill="#ecebe6" />
+<rect x="653.0" y="130" width="10" height="16" rx="2.5" fill="#ecebe6" />
+<rect x="665.5" y="130" width="10" height="16" rx="2.5" fill="#ecebe6" />
+<text x="684" y="142.5" class="xs mono" style="font-size:11px" >n=9</text>
+<text x="716" y="142.5" class="xs" style="font-weight:700;fill:#0f7a55;font-size:13px" >✓</text>
+<rect x="528.0" y="154" width="10" height="16" rx="2.5" fill="#2a78d6" />
+<rect x="540.5" y="154" width="10" height="16" rx="2.5" fill="#2a78d6" />
+<rect x="553.0" y="154" width="10" height="16" rx="2.5" fill="#2a78d6" />
+<rect x="565.5" y="154" width="10" height="16" rx="2.5" fill="#2a78d6" />
+<rect x="578.0" y="154" width="10" height="16" rx="2.5" fill="#2a78d6" />
+<rect x="590.5" y="154" width="10" height="16" rx="2.5" fill="#2a78d6" />
+<rect x="603.0" y="154" width="10" height="16" rx="2.5" fill="#2a78d6" />
+<rect x="615.5" y="154" width="10" height="16" rx="2.5" fill="#2a78d6" />
+<rect x="628.0" y="154" width="10" height="16" rx="2.5" fill="#ecebe6" />
+<rect x="640.5" y="154" width="10" height="16" rx="2.5" fill="#ecebe6" />
+<rect x="653.0" y="154" width="10" height="16" rx="2.5" fill="#ecebe6" />
+<rect x="665.5" y="154" width="10" height="16" rx="2.5" fill="#ecebe6" />
+<text x="684" y="166.5" class="xs mono" style="font-size:11px" >n=8</text>
+<text x="716" y="166.5" class="xs" style="font-weight:700;fill:#0f7a55;font-size:13px" >✓</text>
+<rect x="528.0" y="178" width="10" height="16" rx="2.5" fill="#eb6834" />
+<rect x="540.5" y="178" width="10" height="16" rx="2.5" fill="#eb6834" />
+<rect x="553.0" y="178" width="10" height="16" rx="2.5" fill="#eb6834" />
+<rect x="565.5" y="178" width="10" height="16" rx="2.5" fill="#eb6834" />
+<rect x="578.0" y="178" width="10" height="16" rx="2.5" fill="#eb6834" />
+<rect x="590.5" y="178" width="10" height="16" rx="2.5" fill="#eb6834" />
+<rect x="603.0" y="178" width="10" height="16" rx="2.5" fill="#eb6834" />
+<rect x="615.5" y="178" width="10" height="16" rx="2.5" fill="#ecebe6" />
+<rect x="628.0" y="178" width="10" height="16" rx="2.5" fill="#ecebe6" />
+<rect x="640.5" y="178" width="10" height="16" rx="2.5" fill="#ecebe6" />
+<rect x="653.0" y="178" width="10" height="16" rx="2.5" fill="#ecebe6" />
+<rect x="665.5" y="178" width="10" height="16" rx="2.5" fill="#ecebe6" />
+<text x="684" y="190.5" class="xs mono" style="font-size:11px" >n=7</text>
+<text x="716" y="190.5" class="xs" style="font-weight:700;fill:#b4451a;font-size:13px" >✗</text>
+<text x="528" y="218" class="xs" style="font-weight:700;fill:#1c5cab" >smallest that fits: n = 8</text>
+<circle cx="794.9818181818182" cy="154.0" r="5.5" fill="#b9b8b0" stroke="#ffffff" stroke-width="1"/>
+<circle cx="832.9454545454546" cy="154.0" r="5.5" fill="#b9b8b0" stroke="#ffffff" stroke-width="1"/>
+<circle cx="851.9272727272727" cy="154.0" r="5.5" fill="#b9b8b0" stroke="#ffffff" stroke-width="1"/>
+<circle cx="859.8363636363637" cy="141.5" r="5.5" fill="#b9b8b0" stroke="#ffffff" stroke-width="1"/>
+<circle cx="861.4181818181818" cy="129.0" r="5.5" fill="#b9b8b0" stroke="#ffffff" stroke-width="1"/>
+<circle cx="864.5818181818182" cy="154.0" r="5.5" fill="#b9b8b0" stroke="#ffffff" stroke-width="1"/>
+<circle cx="870.9090909090909" cy="116.5" r="5.5" fill="#b9b8b0" stroke="#ffffff" stroke-width="1"/>
+<circle cx="872.4909090909091" cy="141.5" r="5.5" fill="#b9b8b0" stroke="#ffffff" stroke-width="1"/>
+<circle cx="907.290909090909" cy="154.0" r="5.5" fill="#b9b8b0" stroke="#ffffff" stroke-width="1"/>
+<circle cx="912.0363636363636" cy="141.5" r="5.5" fill="#2a78d6" stroke="#ffffff" stroke-width="1"/>
+<circle cx="931.0181818181818" cy="154.0" r="5.5" fill="#b9b8b0" stroke="#ffffff" stroke-width="1"/>
+<line x1="776" y1="164" x2="950" y2="164" stroke="#c3c2b7"/>
+<line x1="807.6363636363636" y1="164" x2="807.6363636363636" y2="169" stroke="#c3c2b7"/>
+<text x="807.6363636363636" y="184" class="xs" text-anchor="middle" style="fill:#898781;font-size:11px" >15,950</text>
+<line x1="886.7272727272727" y1="164" x2="886.7272727272727" y2="169" stroke="#c3c2b7"/>
+<text x="886.7272727272727" y="184" class="xs" text-anchor="middle" style="fill:#898781;font-size:11px" >16,000</text>
+<line x1="912.0363636363636" y1="96" x2="912.0363636363636" y2="146" stroke="#2a78d6" stroke-width="1.2" stroke-dasharray="3 3"/>
+<text x="912.0363636363636" y="88" class="xs" text-anchor="middle" style="font-weight:700;fill:#1c5cab" >p90 = 16,016</text>
+<text x="863.0" y="212" class="xs" text-anchor="middle" style="fill:#898781;font-size:11px" >one dot per seed</text>
+</svg>

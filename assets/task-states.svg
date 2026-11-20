@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="300" viewBox="0 0 1000 300" role="img" aria-labelledby="title desc">
+<title id="title">The life of a task</title>
+<desc id="desc">A task with a delayed start waits, then becomes pending. The scheduler places it (starting); the Borglet installs the package on first use (installing) and runs it (running). It ends as finished, failed, oom (over its memory limit) or killed. Preemption, a machine going down or a lost task sends it back to pending. Services that fail or are OOM-killed are restarted after a backoff of 1, 2, 4 up to 30 seconds.</desc>
+<style>
+text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif; fill: #0b0b0b; }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+.h { font-size: 16px; font-weight: 700; }
+.h2 { font-size: 14.5px; font-weight: 700; }
+.t { font-size: 13.5px; fill: #3b3a37; }
+.s { font-size: 12.5px; fill: #52514e; }
+.xs { font-size: 11.5px; fill: #52514e; }
+.k { font-size: 11.5px; font-weight: 700; letter-spacing: .07em; }
+.lab { font-size: 12px; fill: #52514e; }
+</style>
+<defs><marker id="m6f6e69" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7.5" markerHeight="7.5" orient="auto-start-reverse"><path d="M0.5,0.8 L9,5 L0.5,9.2 L2.6,5 z" fill="#6f6e69"/></marker><marker id="m1c5cab" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7.5" markerHeight="7.5" orient="auto-start-reverse"><path d="M0.5,0.8 L9,5 L0.5,9.2 L2.6,5 z" fill="#1c5cab"/></marker><marker id="meb6834" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7.5" markerHeight="7.5" orient="auto-start-reverse"><path d="M0.5,0.8 L9,5 L0.5,9.2 L2.6,5 z" fill="#eb6834"/></marker></defs>
+<rect x="0.5" y="0.5" width="999.0" height="299.0" rx="16" fill="#fcfcfb" stroke="#e4e3dd" stroke-width="1" />
+<rect x="24" y="120" width="112" height="40" rx="20.0" fill="#f4f4f1" stroke="#c3c2b7" stroke-width="1.4" stroke-dasharray="5 4"/>
+<text x="80.0" y="145.0" class="t mono" text-anchor="middle" style="font-size:13.5px;font-weight:700" >waiting</text>
+<text x="80.0" y="183" class="xs" text-anchor="middle" style="font-size:12.5px" >delayed start,</text>
+<text x="80.0" y="200" class="xs" text-anchor="middle" style="font-size:12.5px" >held until its time</text>
+<rect x="172" y="120" width="120" height="40" rx="20.0" fill="#f1f0ec" stroke="#a9a79f" stroke-width="1.4"/>
+<text x="232.0" y="145.0" class="t mono" text-anchor="middle" style="font-size:13.5px;font-weight:700" >pending</text>
+<text x="232.0" y="183" class="xs" text-anchor="middle" style="font-size:12.5px" >in the queue,</text>
+<text x="232.0" y="200" class="xs" text-anchor="middle" style="font-size:12.5px" >no room yet</text>
+<rect x="328" y="120" width="120" height="40" rx="20.0" fill="#eef5fd" stroke="#2a78d6" stroke-width="1.4"/>
+<text x="388.0" y="145.0" class="t mono" text-anchor="middle" style="font-size:13.5px;font-weight:700" >starting</text>
+<text x="388.0" y="183" class="xs" text-anchor="middle" style="font-size:12.5px" >placed; the Borglet</text>
+<text x="388.0" y="200" class="xs" text-anchor="middle" style="font-size:12.5px" >is asked to start it</text>
+<rect x="484" y="120" width="120" height="40" rx="20.0" fill="#eef5fd" stroke="#2a78d6" stroke-width="1.4"/>
+<text x="544.0" y="145.0" class="t mono" text-anchor="middle" style="font-size:13.5px;font-weight:700" >installing</text>
+<text x="544.0" y="183" class="xs" text-anchor="middle" style="font-size:12.5px" >first use of the</text>
+<text x="544.0" y="200" class="xs" text-anchor="middle" style="font-size:12.5px" >package (2 s)</text>
+<rect x="640" y="120" width="120" height="40" rx="20.0" fill="#ecf8f2" stroke="#1baf7a" stroke-width="1.4"/>
+<text x="700.0" y="145.0" class="t mono" text-anchor="middle" style="font-size:13.5px;font-weight:700" >running</text>
+<text x="700.0" y="183" class="xs" text-anchor="middle" style="font-size:12.5px" >in its cgroup,</text>
+<text x="700.0" y="200" class="xs" text-anchor="middle" style="font-size:12.5px" >usage every second</text>
+<path d="M139,140.0 L168,140.0" fill="none" stroke="#6f6e69" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#m6f6e69)"/>
+<path d="M295,140.0 L324,140.0" fill="none" stroke="#6f6e69" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#m6f6e69)"/>
+<path d="M451,140.0 L480,140.0" fill="none" stroke="#6f6e69" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#m6f6e69)"/>
+<path d="M607,140.0 L636,140.0" fill="none" stroke="#6f6e69" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#m6f6e69)"/>
+<rect x="806" y="56" width="172" height="34" rx="17.0" fill="#ecf8f2" stroke="#1baf7a" stroke-width="1.4"/>
+<text x="822" y="78.0" class="t mono" style="font-size:13px" ><tspan style="font-weight:700">finished</tspan><tspan dx="6" style="fill:#898781;font-size:12px">exit 0</tspan></text>
+<path d="M763,140.0 C785,140.0 782,73.0 802,73.0" fill="none" stroke="#6f6e69" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#m6f6e69)"/>
+<rect x="806" y="100" width="172" height="34" rx="17.0" fill="#fdf1eb" stroke="#eb6834" stroke-width="1.4"/>
+<text x="822" y="122.0" class="t mono" style="font-size:13px" ><tspan style="font-weight:700">failed</tspan><tspan dx="6" style="fill:#898781;font-size:12px">exit ≠ 0</tspan></text>
+<path d="M763,140.0 C785,140.0 782,117.0 802,117.0" fill="none" stroke="#6f6e69" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#m6f6e69)"/>
+<rect x="806" y="144" width="172" height="34" rx="17.0" fill="#fdf1eb" stroke="#eb6834" stroke-width="1.4"/>
+<text x="822" y="166.0" class="t mono" style="font-size:13px" ><tspan style="font-weight:700">oom</tspan><tspan dx="6" style="fill:#898781;font-size:12px">over memory.max</tspan></text>
+<path d="M763,140.0 C785,140.0 782,161.0 802,161.0" fill="none" stroke="#6f6e69" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#m6f6e69)"/>
+<rect x="806" y="188" width="172" height="34" rx="17.0" fill="#f1f0ec" stroke="#a9a79f" stroke-width="1.4"/>
+<text x="822" y="210.0" class="t mono" style="font-size:13px" ><tspan style="font-weight:700">killed</tspan><tspan dx="6" style="fill:#898781;font-size:12px">by you</tspan></text>
+<path d="M763,140.0 C785,140.0 782,205.0 802,205.0" fill="none" stroke="#6f6e69" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#m6f6e69)"/>
+<path d="M700,117 C700,60 700,60 660,60 L272,60 C232,60 232,60 232,115" fill="none" stroke="#1c5cab" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#m1c5cab)"/>
+<rect x="330" y="47" width="290" height="26" rx="13" fill="#fcfcfb" />
+<text x="475" y="65" class="s" text-anchor="middle" style="font-weight:700;fill:#1c5cab" >preempted · machine DOWN · lost</text>
+<path d="M980,161 H988" fill="none" stroke="#eb6834" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M980,117 H988 V250 Q988,262 976,262 H198 Q184,262 184,250 V162" fill="none" stroke="#eb6834" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#meb6834)"/>
+<rect x="318" y="249" width="360" height="26" rx="13" fill="#fcfcfb" />
+<text x="498" y="267" class="s" text-anchor="middle" style="font-weight:700;fill:#b4451a" >services restart after 1, 2, 4 … 30 s of backoff</text>
+</svg>
