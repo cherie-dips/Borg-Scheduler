@@ -67,7 +67,9 @@ int Scheduler::protected_from(const Task& t) const {
 }
 
 bool Scheduler::feasible(const Cell&, const Task& t, const Machine& m) const {
-    if (!m.up) return false;
+    if (!m.up || m.draining) return false;
+    for (MachineId bad : t.avoid)
+        if (bad == m.id) return false;
     for (const auto& c : t.constraints) {
         if (!c.hard) continue;
         auto it = m.attributes.find(c.key);
@@ -145,6 +147,16 @@ double Scheduler::score(const Cell& cell, const Task& t, const Machine& m) const
     auto jc = m.job_count.find(t.job);
     if (jc != m.job_count.end()) s -= cfg_.w_spread * jc->second;
     if (!t.package.empty() && m.packages.count(t.package)) s += cfg_.w_package;
+    if (cfg_.w_mix > 0) {
+        // Prefer machines whose other work is in the other band: prod tasks next to non-prod
+        // ones can expand into their room in a load spike (§3.2).
+        Resources prod = m.committed(cfg_.prod_min_priority, false), all = m.total_limits();
+        double total = all.cpu / cap_c + all.ram / cap_r;
+        if (total > kEps) {
+            double prod_share = (prod.cpu / cap_c + prod.ram / cap_r) / total;
+            s += cfg_.w_mix * (is_prod(t.priority) ? 1 - prod_share : prod_share);
+        }
+    }
     for (const auto& c : t.constraints) {
         if (c.hard) continue;
         auto it = m.attributes.find(c.key);
@@ -158,6 +170,9 @@ uint64_t Scheduler::class_key(const Task& t) const {
     h = mix(h, static_cast<uint64_t>(t.priority));
     h = mix(h, bits(t.limit.cpu));
     h = mix(h, bits(t.limit.ram));
+    h = mix(h, bits(t.limit.disk));
+    h = mix(h, bits(t.limit.ports));
+    for (MachineId m : t.avoid) h = mix(h, static_cast<uint64_t>(m) + 1);
     h = mix(h, t.distinct_machines);
     h = mix(h, hash_str(t.package));
     for (const auto& c : t.constraints) h = mix(mix(mix(h, hash_str(c.key)), hash_str(c.value)), c.hard);
@@ -216,16 +231,17 @@ std::vector<Scheduler::Candidate> Scheduler::find_candidates(const Cell& cell, c
 
 void Scheduler::place_with_preemption(Cell& cell, TaskId id, MachineId mid, ScheduleResult& res) {
     const Task& t = cell.task(id);
+    uint64_t version = cell.machine(mid).version;
     for (TaskId v : victims(cell, t, cell.machine(mid))) {
         cell.unplace(v);
         cell.task(v).preemptions++;
         res.preempted.push_back({v, mid, id});
     }
     cell.place(id, mid);
-    res.placed.push_back({id, mid});
+    res.placed.push_back({id, mid, version});
 }
 
-std::vector<std::vector<TaskId>> Scheduler::order_pending(const Cell& cell) const {
+std::vector<std::vector<TaskId>> Scheduler::group_pending(const Cell& cell) const {
     std::vector<TaskId> pend = cell.pending();
     auto by_job_index = [&](TaskId a, TaskId b) {
         const Task& x = cell.task(a);
@@ -253,79 +269,97 @@ std::vector<std::vector<TaskId>> Scheduler::order_pending(const Cell& cell) cons
     } else {
         for (TaskId id : pend) groups.push_back({id});
     }
-
-    // Priority high -> low; round-robin across users inside one priority so that one user's
-    // huge job does not block everyone else (§3.2).
-    std::map<int, std::map<std::string, std::vector<size_t>>, std::greater<int>> buckets;
-    for (size_t g = 0; g < groups.size(); ++g) {
-        const Task& t = cell.task(groups[g][0]);
-        buckets[t.priority][t.user].push_back(g);
-    }
-    std::vector<std::vector<TaskId>> ordered;
-    ordered.reserve(groups.size());
-    for (auto& [prio, users] : buckets) {
-        bool any = true;
-        for (size_t round = 0; any; ++round) {
-            any = false;
-            for (auto& [user, gs] : users) {
-                if (round < gs.size()) {
-                    ordered.push_back(std::move(groups[gs[round]]));
-                    any = true;
-                }
-            }
-        }
-    }
-    return ordered;
+    return groups;
 }
 
 ScheduleResult Scheduler::schedule(Cell& cell) {
     auto t0 = std::chrono::steady_clock::now();
     ScheduleResult res;
 
-    for (auto& group : order_pending(cell)) {
-        const Task& rep = cell.task(group[0]);
-        uint64_t key = class_key(rep);
-
-        if (!cfg_.equivalence_classes) {
-            const Task& t = rep;
-            auto cands = find_candidates(cell, t, key, res);
-            if (cands.empty()) {
-                res.unplaced++;
-                continue;
-            }
-            auto best = std::max_element(cands.begin(), cands.end());
-            place_with_preemption(cell, group[0], best->machine, res);
-            continue;
-        }
-
-        // Equivalence class: feasibility + scoring once for the whole group, then hand out
-        // machines from a heap; a machine whose state changed is re-scored when it is popped.
+    struct Group {
+        std::vector<TaskId> tasks;
+        size_t next = 0;  // first task that is not placed yet
+        uint64_t key = 0;
         std::priority_queue<Candidate> heap;
-        auto refill = [&] {
-            for (const auto& c : find_candidates(cell, rep, key, res)) heap.push(c);
-        };
-        refill();
-        size_t i = 0;
-        while (i < group.size()) {
-            if (heap.empty()) {
-                refill();
-                if (heap.empty()) break;
+        bool stuck = false;  // nothing fits any more in this pass
+        bool done() const { return stuck || next >= tasks.size(); }
+    };
+    std::vector<Group> groups;
+    for (auto& ids : group_pending(cell)) {
+        Group g;
+        g.key = class_key(cell.task(ids[0]));
+        g.tasks = std::move(ids);
+        groups.push_back(std::move(g));
+    }
+
+    // Places the next task of a group on its best machine. Feasibility and scoring are done once
+    // per group (equivalence class); a machine whose state changed since then is re-scored when
+    // it reaches the top of the heap.
+    auto place_next = [&](Group& g) {
+        const Task& rep = cell.task(g.tasks[0]);
+        bool refilled = false;
+        while (true) {
+            if (g.heap.empty()) {
+                if (refilled) return false;
+                for (const auto& c : find_candidates(cell, rep, g.key, res)) g.heap.push(c);
+                refilled = true;
+                if (g.heap.empty()) return false;
             }
-            Candidate c = heap.top();
-            heap.pop();
+            Candidate c = g.heap.top();
+            g.heap.pop();
             const Machine& m = cell.machine(c.machine);
             if (m.version != c.version) {
                 res.feasibility_checks++;
                 if (feasible(cell, rep, m))
-                    heap.push({cached_score(cell, rep, m, key, res), m.id, m.version});
+                    g.heap.push({cached_score(cell, rep, m, g.key, res), m.id, m.version});
                 continue;
             }
             uint64_t old_version = m.version;
-            place_with_preemption(cell, group[i++], c.machine, res);
-            heap.push({c.score, c.machine, old_version});  // stale: re-scored when popped
+            place_with_preemption(cell, g.tasks[g.next++], c.machine, res);
+            g.heap.push({c.score, c.machine, old_version});  // stale: re-scored when popped
+            return true;
         }
-        res.unplaced += group.size() - i;
+    };
+
+    // Priority high -> low. Within a priority, users take turns and place one task per turn
+    // (§3.2: round-robin for fairness across users, and no head-of-line blocking behind a large
+    // job). The user who goes first rotates from pass to pass, so no name is always first.
+    std::map<int, std::map<std::string, std::vector<size_t>>, std::greater<int>> buckets;
+    for (size_t g = 0; g < groups.size(); ++g) {
+        const Task& t = cell.task(groups[g].tasks[0]);
+        buckets[t.priority][t.user].push_back(g);
     }
+    for (auto& [prio, users] : buckets) {
+        struct Turn {
+            std::vector<size_t>* queue;  // this user's groups, in submission order
+            size_t cur = 0;
+        };
+        std::vector<Turn> turns;
+        for (auto& [user, gs] : users) turns.push_back({&gs, 0});
+        std::rotate(turns.begin(), turns.begin() + static_cast<long>(pass_ % turns.size()), turns.end());
+        while (!turns.empty()) {
+            std::vector<Turn> still;
+            for (Turn& t : turns) {
+                bool placed = false;
+                while (t.cur < t.queue->size()) {
+                    Group& g = groups[(*t.queue)[t.cur]];
+                    if (!g.done() && place_next(g)) {
+                        placed = true;
+                        break;
+                    }
+                    if (!g.done()) {
+                        g.stuck = true;
+                        res.unplaced += g.tasks.size() - g.next;
+                    }
+                    g.heap = {};
+                    t.cur++;
+                }
+                if (placed) still.push_back(t);
+            }
+            turns.swap(still);
+        }
+    }
+    pass_++;
 
     res.elapsed_ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
     return res;

@@ -1,0 +1,138 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="620" viewBox="0 0 1000 620" role="img" aria-labelledby="title desc">
+<title id="title">How Borg Scheduler fits together</title>
+<desc id="desc">The live Borg cell: a terminal-style page in a browser talks to the borgmaster over HTTP; the borgmaster checks quota, keeps the pending queue, makes a scheduling pass every second and polls five Borglets, which run each task as a process in its own cgroup. One C++ scheduler library in core/ is linked into the borgmaster, into borgscheduler (the same pass in a process of its own) and into borgsim. The simulator: borgsim takes a workload (a synthetic cell, or Google&#x27;s 2011 cluster trace), places its tasks with the same scheduler, runs cell compaction and six experiments, and writes CSV files that plot.py turns into charts.</desc>
+<style>
+text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif; fill: #0b0b0b; }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+.h2 { font-size: 14.5px; font-weight: 700; }
+.t { font-size: 13.5px; fill: #3b3a37; }
+.s { font-size: 12.5px; fill: #52514e; }
+.xs { font-size: 11.5px; fill: #52514e; }
+.k { font-size: 11.5px; font-weight: 700; letter-spacing: .07em; }
+.lab { font-size: 12px; fill: #52514e; }
+</style>
+<defs><marker id="m6f6e69" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7.5" markerHeight="7.5" orient="auto-start-reverse"><path d="M0.5,0.8 L9,5 L0.5,9.2 L2.6,5 z" fill="#6f6e69"/></marker><marker id="m6250d6" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7.5" markerHeight="7.5" orient="auto-start-reverse"><path d="M0.5,0.8 L9,5 L0.5,9.2 L2.6,5 z" fill="#6250d6"/></marker></defs>
+<rect x="0.5" y="0.5" width="999.0" height="619.0" rx="16" fill="#fcfcfb" stroke="#e4e3dd" stroke-width="1" />
+
+<!-- The two bands: the live cell and the simulator -->
+<rect x="20" y="20" width="960" height="228" rx="14" fill="#f4fbf7" stroke="#d4eee2" stroke-width="1" />
+<rect x="20" y="378" width="960" height="222" rx="14" fill="#f6f9fe" stroke="#dce8f8" stroke-width="1" />
+
+<!-- The live cell -->
+<rect x="38" y="36" width="150" height="24" rx="12.0" fill="#ecf8f2" stroke="#1baf7a" stroke-width="1" />
+<text x="113.0" y="52.2" class="k" text-anchor="middle" style="fill:#0f7a55;" >LIVE BORG CELL</text>
+<text x="200" y="53" class="s" >a small working cluster, in Docker or as plain processes</text>
+
+<rect x="40" y="88" width="180" height="144" rx="12" fill="#ffffff" stroke="#1baf7a" stroke-width="1.4" />
+<text x="58" y="116" class="h2" >5 Borglets</text>
+<text x="58" y="136" class="xs" >one per machine</text>
+<rect x="58" y="150" width="22" height="34" rx="5" fill="#ffffff" stroke="#1baf7a" stroke-width="1.2" />
+<rect x="62" y="168" width="14" height="12" rx="2.5" fill="#ecf8f2" stroke="#1baf7a" stroke-width="0.8" />
+<text x="69.0" y="163" class="xs" text-anchor="middle" style="font-size:10.5px;font-weight:700" >1</text>
+<rect x="86" y="150" width="22" height="34" rx="5" fill="#ffffff" stroke="#1baf7a" stroke-width="1.2" />
+<rect x="90" y="168" width="14" height="12" rx="2.5" fill="#ecf8f2" stroke="#1baf7a" stroke-width="0.8" />
+<text x="97.0" y="163" class="xs" text-anchor="middle" style="font-size:10.5px;font-weight:700" >2</text>
+<rect x="114" y="150" width="34" height="34" rx="5" fill="#ffffff" stroke="#1baf7a" stroke-width="1.2" />
+<rect x="118" y="168" width="26" height="12" rx="2.5" fill="#ecf8f2" stroke="#1baf7a" stroke-width="0.8" />
+<text x="131.0" y="163" class="xs" text-anchor="middle" style="font-size:10.5px;font-weight:700" >3</text>
+<rect x="154" y="150" width="34" height="34" rx="5" fill="#ffffff" stroke="#1baf7a" stroke-width="1.2" />
+<rect x="158" y="168" width="26" height="12" rx="2.5" fill="#ecf8f2" stroke="#1baf7a" stroke-width="0.8" />
+<text x="171.0" y="163" class="xs" text-anchor="middle" style="font-size:10.5px;font-weight:700" >4</text>
+<rect x="194" y="150" width="22" height="34" rx="5" fill="#ffffff" stroke="#1baf7a" stroke-width="1.2" />
+<rect x="198" y="168" width="14" height="12" rx="2.5" fill="#ecf8f2" stroke="#1baf7a" stroke-width="0.8" />
+<text x="205.0" y="163" class="xs" text-anchor="middle" style="font-size:10.5px;font-weight:700" >5</text>
+<text x="58" y="204" class="t" >1–2 CPUs · 0.5–1 GB</text>
+<text x="58" y="222" class="xs" >a cgroup v2 per task</text>
+
+<rect x="300" y="88" width="300" height="144" rx="12" fill="#ffffff" stroke="#1baf7a" stroke-width="1.4" />
+<text x="320" y="116" class="h2" ><tspan class="mono">borgmaster</tspan><tspan class="s" dx="7" style="font-weight:400">the controller</tspan></text>
+<circle cx="326" cy="136.5" r="3" fill="#1baf7a"/>
+<text x="338" y="141" class="t" >REST API, cell state, event log</text>
+<circle cx="326" cy="159.5" r="3" fill="#1baf7a"/>
+<text x="338" y="164" class="t" >quota check, then the pending queue</text>
+<circle cx="326" cy="182.5" r="3" fill="#1baf7a"/>
+<text x="338" y="187" class="t" >a scheduling pass every second</text>
+<circle cx="326" cy="205.5" r="3" fill="#1baf7a"/>
+<text x="338" y="210" class="t" >polls every Borglet every second</text>
+
+<rect x="660" y="88" width="302" height="144" rx="12" fill="#ffffff" stroke="#1baf7a" stroke-width="1.4" />
+<text x="678" y="116" class="h2" >Live Borg Cell page in your browser</text>
+<rect x="678" y="130" width="266" height="88" rx="8" fill="#000000" />
+<rect x="687" y="139" width="40" height="15" fill="#ffffff" />
+<text x="690.5" y="150" class="xs mono" style="fill:#000000;font-size:11px;font-weight:700" >DEMOS</text>
+<text x="736" y="150" class="xs mono" style="fill:#ffffff;font-size:11px" >CONSOLE  CELL  LOG</text>
+<text x="690" y="169" class="xs mono" style="fill:#ffffff;font-size:10.5px" >web-frontend</text>
+<rect x="800" y="161.5" width="110" height="7" fill="none" stroke="#ffffff" stroke-width="0.7" />
+<rect x="800" y="161.5" width="110" height="7" fill="#4f9dff" />
+<text x="690" y="183" class="xs mono" style="fill:#ffffff;font-size:10.5px" >analytics</text>
+<rect x="800" y="175.5" width="110" height="7" fill="none" stroke="#ffffff" stroke-width="0.7" />
+<rect x="800" y="175.5" width="68" height="7" fill="#ff9a3c" />
+<text x="690" y="197" class="xs mono" style="fill:#ffffff;font-size:10.5px" >crawler</text>
+<rect x="800" y="189.5" width="110" height="7" fill="none" stroke="#ffffff" stroke-width="0.7" />
+<rect x="800" y="189.5" width="38" height="7" fill="#ff7ad9" />
+<text x="690" y="211" class="xs mono" style="fill:#ffffff;font-size:10.5px" >borg&gt; run web --tasks 3</text>
+
+<path d="M296,140 L224,140" fill="none" stroke="#6f6e69" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#m6f6e69)"/>
+<text x="260" y="130" class="lab" text-anchor="middle" >start, kill</text>
+<path d="M224,186 L296,186" fill="none" stroke="#6f6e69" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#m6f6e69)"/>
+<text x="260" y="176" class="lab" text-anchor="middle" >status</text>
+<path d="M656,140 L604,140" fill="none" stroke="#6f6e69" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#m6f6e69)"/>
+<text x="630" y="130" class="lab" text-anchor="middle" >jobs</text>
+<path d="M604,186 L656,186" fill="none" stroke="#6f6e69" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#m6f6e69)"/>
+<text x="630" y="176" class="lab" text-anchor="middle" >state</text>
+
+<!-- The scheduler library, and the scheduler as a process of its own -->
+<rect x="300" y="268" width="300" height="90" rx="12" fill="#f7f6fe" stroke="#6250d6" stroke-width="1.4" />
+<text x="320" y="296" class="h2" ><tspan class="mono">core/</tspan><tspan dx="7">the Borg scheduler</tspan></text>
+<text x="320" y="320" class="t" >order → feasible → score → preempt</text>
+<text x="320" y="342" class="s" >+ the paper&#x27;s §3.4 speed-ups</text>
+<path d="M450,266 L450,236" fill="none" stroke="#6250d6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#m6250d6)"/>
+<path d="M450,360 L450,432" fill="none" stroke="#6250d6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#m6250d6)"/>
+<path d="M602,313 L656,313" fill="none" stroke="#6250d6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#m6250d6)"/>
+<text x="278" y="308" class="s" text-anchor="end" >one scheduler library,</text>
+<text x="278" y="328" class="s" text-anchor="end" >linked into all three</text>
+<rect x="660" y="276" width="302" height="74" rx="12" fill="#ffffff" stroke="#6250d6" stroke-width="1.2" stroke-dasharray="5 4" />
+<text x="678" y="302" class="h2" ><tspan class="mono">borgscheduler</tspan><tspan class="s" dx="7" style="font-weight:400">optional</tspan></text>
+<text x="678" y="322" class="s" >the same pass in a process of its own;</text>
+<text x="678" y="339" class="s" >the Borgmaster checks what it sends</text>
+
+<!-- The simulator -->
+<rect x="38" y="394" width="118" height="24" rx="12.0" fill="#eef5fd" stroke="#2a78d6" stroke-width="1" />
+<text x="97.0" y="410.2" class="k" text-anchor="middle" style="fill:#1c5cab;" >SIMULATOR</text>
+<text x="168" y="411" class="s" >the same scheduler on a much larger cell</text>
+
+<rect x="40" y="436" width="200" height="146" rx="12" fill="#ffffff" stroke="#e4e3dd" stroke-width="1" />
+<text x="58" y="466" class="h2" >Workload</text>
+<text x="58" y="492" class="t" >a synthetic cell, or</text>
+<text x="58" y="514" class="t" >Google&#x27;s 2011 trace:</text>
+<text x="58" y="536" class="t" >12,480 machines</text>
+<text x="58" y="564" class="xs mono" >tools/fetch_trace.sh</text>
+<path d="M242,509 L296,509" fill="none" stroke="#6f6e69" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#m6f6e69)"/>
+<text x="269" y="499" class="lab" text-anchor="middle" >tasks</text>
+
+<rect x="300" y="436" width="300" height="146" rx="12" fill="#ffffff" stroke="#2a78d6" stroke-width="1.4" />
+<text x="320" y="466" class="h2" ><tspan class="mono">borgsim</tspan><tspan class="s" dx="7" style="font-weight:400">the simulator</tspan></text>
+<circle cx="330" cy="493.5" r="10" fill="#2a78d6"/>
+<text x="330" y="497.8" class="k" text-anchor="middle" style="fill:#ffffff;letter-spacing:0" >1</text>
+<text x="350" y="498" class="t" >snapshot of the running tasks</text>
+<circle cx="330" cy="521.5" r="10" fill="#2a78d6"/>
+<text x="330" y="525.8" class="k" text-anchor="middle" style="fill:#ffffff;letter-spacing:0" >2</text>
+<text x="350" y="526" class="t" >cell compaction: smallest cell</text>
+<circle cx="330" cy="549.5" r="10" fill="#2a78d6"/>
+<text x="330" y="553.8" class="k" text-anchor="middle" style="fill:#ffffff;letter-spacing:0" >3</text>
+<text x="350" y="554" class="t" >6 experiments × 11 seeds</text>
+<path d="M602,509 L648,509" fill="none" stroke="#6f6e69" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#m6f6e69)"/>
+<text x="625" y="499" class="lab" text-anchor="middle" >CSV</text>
+
+<rect x="652" y="436" width="140" height="146" rx="12" fill="#ffffff" stroke="#eb6834" stroke-width="1.4" />
+<text x="670" y="466" class="h2" >CSV files</text>
+<text x="670" y="494" class="t" >machines needed</text>
+<text x="670" y="516" class="t" >per experiment</text>
+<text x="670" y="564" class="xs mono" >--out &lt;dir&gt;</text>
+<path d="M794,509 L818,509" fill="none" stroke="#6f6e69" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#m6f6e69)"/>
+
+<rect x="822" y="436" width="140" height="146" rx="12" fill="#ffffff" stroke="#eb6834" stroke-width="1.4" />
+<text x="840" y="466" class="h2 mono" style="font-size:13.5px" >plot.py</text>
+<text x="840" y="494" class="t" >→ PNG charts</text>
+<text x="840" y="564" class="xs mono" >tools/plot.py</text>
+</svg>

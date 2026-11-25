@@ -1,5 +1,14 @@
+# The image is built from Makefile, third_party/, core/, master/, borglet/ and ui/ only.
+.git/
 build/
 data/
-.git/
 results/
+assets/
+sim/
+tests/
+tools/
+*.md
 *.o
+*.d
+*.log
+.DS_Store

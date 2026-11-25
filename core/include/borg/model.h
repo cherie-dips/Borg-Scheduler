@@ -12,22 +12,33 @@ namespace borg {
 
 constexpr double kEps = 1e-9;
 
-// CPU and RAM. Units are up to the caller: cores + MB in the live cell,
-// normalized 0..1 values (relative to the largest machine) in the Google trace.
+// Every resource dimension is requested independently (§2.3). Units are up to the caller:
+// cores + MB in the live cell, normalized 0..1 values (relative to the largest machine) in the
+// Google trace. Disk (MB) and TCP ports (a count) are used by the live cell only; they are 0
+// in the trace, so they never limit a placement there.
 struct Resources {
     double cpu = 0;
     double ram = 0;
+    double disk = 0;
+    double ports = 0;
 
     Resources() = default;
-    Resources(double c, double r) : cpu(c), ram(r) {}
+    Resources(double c, double r, double d = 0, double p = 0) : cpu(c), ram(r), disk(d), ports(p) {}
 
-    Resources& operator+=(const Resources& o) { cpu += o.cpu; ram += o.ram; return *this; }
-    Resources& operator-=(const Resources& o) { cpu -= o.cpu; ram -= o.ram; return *this; }
+    Resources& operator+=(const Resources& o) {
+        cpu += o.cpu; ram += o.ram; disk += o.disk; ports += o.ports;
+        return *this;
+    }
+    Resources& operator-=(const Resources& o) {
+        cpu -= o.cpu; ram -= o.ram; disk -= o.disk; ports -= o.ports;
+        return *this;
+    }
     friend Resources operator+(Resources a, const Resources& b) { return a += b; }
     friend Resources operator-(Resources a, const Resources& b) { return a -= b; }
 
     bool fits_in(const Resources& avail) const {
-        return cpu <= avail.cpu + kEps && ram <= avail.ram + kEps;
+        return cpu <= avail.cpu + kEps && ram <= avail.ram + kEps && disk <= avail.disk + kEps &&
+               ports <= avail.ports + kEps;
     }
 };
 
@@ -55,6 +66,7 @@ struct Task {
     std::vector<Constraint> constraints;
     bool distinct_machines = false;  // no two tasks of this job on the same machine
     std::string package;             // binary package; machines that already have it start the task faster
+    std::vector<MachineId> avoid;    // machines this task crashed on: never placed there again (§4)
 
     TaskState state = TaskState::Pending;
     MachineId machine = -1;
@@ -67,6 +79,7 @@ struct Machine {
     Resources capacity;
     std::map<std::string, std::string> attributes;
     bool up = true;
+    bool draining = false;  // under maintenance (§4): keeps its tasks for now, takes no new ones
 
     std::vector<TaskId> tasks;
     // Per-priority totals of limits and reservations, so feasibility is O(#priorities), not O(#tasks).

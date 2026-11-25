@@ -1,6 +1,7 @@
 // A Borg cell: the machines plus every task that is pending or running on them.
 #pragma once
 
+#include <algorithm>
 #include <unordered_map>
 #include <vector>
 
@@ -18,11 +19,16 @@ public:
     void remove_task(TaskId id);
     // An id for a task that is created now but enters the cell later (e.g. a delayed start).
     TaskId reserve_id() { return next_id_++; }
+    // Makes sure new ids start at `min` or later (used when a saved cell is restored).
+    void ensure_next_id(TaskId min) { next_id_ = std::max(next_id_, min); }
 
     void place(TaskId id, MachineId m);
     // Takes the task off its machine and puts it back in the pending state.
     void unplace(TaskId id);
     void set_machine_up(MachineId m, bool up);
+    void set_draining(MachineId m, bool draining);
+    // Changes a task's reservation (§5.5), keeping its machine's per-priority totals right.
+    void set_reservation(TaskId id, const Resources& r);
 
     Task& task(TaskId id) { return tasks_.at(id); }
     const Task& task(TaskId id) const { return tasks_.at(id); }

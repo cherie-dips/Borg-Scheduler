@@ -1,9 +1,14 @@
 #include "cgroups.h"
 
 #include <fcntl.h>
+#if defined(__APPLE__)
+#include <libproc.h>
+#include <mach/mach_time.h>
+#endif
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include <algorithm>
 #include <cerrno>
 #include <cmath>
 #include <cstring>
@@ -58,16 +63,38 @@ bool Cgroups::init(std::string* why) {
     return true;
 }
 
-std::string Cgroups::create(const std::string& name, double cpu_cores, int64_t ram_bytes) {
-    if (!enabled_) return "";
-    std::string path = root_ + "/task-" + name;
-    if (::mkdir(path.c_str(), 0755) != 0 && errno != EEXIST) return "";
+namespace {
+
+std::string cpu_max(double cores) {
     const long period = 100000;
-    long quota = std::max(1000L, static_cast<long>(std::lround(cpu_cores * period)));
-    write_file(path + "/cpu.max", std::to_string(quota) + " " + std::to_string(period));
-    write_file(path + "/memory.max", std::to_string(ram_bytes));
+    if (cores < 0) return "max " + std::to_string(period);
+    long quota = std::max(1000L, static_cast<long>(std::lround(cores * period)));
+    return std::to_string(quota) + " " + std::to_string(period);
+}
+
+}  // namespace
+
+std::string Cgroups::create(const std::string& name, const Limits& limits, const std::string& parent) {
+    if (!enabled_) return "";
+    std::string path = (parent.empty() ? root_ : parent) + "/task-" + name;
+    if (::mkdir(path.c_str(), 0755) != 0 && errno != EEXIST) return "";
+    write_file(path + "/cpu.max", cpu_max(limits.cap_cpu ? limits.cpu_cores : -1));
+    write_file(path + "/cpu.weight", std::to_string(std::min(10000, std::max(1, limits.weight))));
+    write_file(path + "/memory.max", std::to_string(limits.ram_bytes));
     write_file(path + "/memory.swap.max", "0");   // OOM-kill instead of swapping
     write_file(path + "/memory.oom.group", "1");  // kill the whole task, not one thread
+    return path;
+}
+
+std::string Cgroups::create_alloc(const std::string& name, double cpu_cores, int64_t ram_bytes) {
+    if (!enabled_) return "";
+    std::string path = root_ + "/alloc-" + name;
+    if (::mkdir(path.c_str(), 0755) != 0 && errno != EEXIST) return "";
+    // The alloc's own limits bound everything inside it; its tasks get child cgroups.
+    write_file(path + "/cpu.max", cpu_max(cpu_cores));
+    write_file(path + "/memory.max", std::to_string(ram_bytes));
+    write_file(path + "/memory.swap.max", "0");
+    write_file(path + "/cgroup.subtree_control", "+cpu +memory");
     return path;
 }
 
@@ -93,6 +120,41 @@ bool Cgroups::stats(const std::string& path, Stats* out) const {
     while (ev >> key >> val)
         if (key == "oom_kill") out->oom_kills = static_cast<int>(val);
     return true;
+}
+
+bool Cgroups::proc_stats(pid_t pid, Stats* out) {
+#if defined(__APPLE__)
+    struct rusage_info_v2 ri;
+    if (proc_pid_rusage(pid, RUSAGE_INFO_V2, reinterpret_cast<rusage_info_t*>(&ri)) != 0) return false;
+    static mach_timebase_info_data_t tb = [] {
+        mach_timebase_info_data_t t;
+        mach_timebase_info(&t);
+        return t;
+    }();
+    uint64_t ns = (ri.ri_user_time + ri.ri_system_time) * tb.numer / tb.denom;
+    out->cpu_usec = ns / 1000;
+    // The footprint also counts memory that macOS has compressed; the resident size does not.
+    out->mem_bytes = static_cast<int64_t>(ri.ri_phys_footprint);
+    return true;
+#else
+    std::string stat = read_file("/proc/" + std::to_string(pid) + "/stat");
+    auto paren = stat.rfind(')');  // the process name may contain spaces
+    if (paren == std::string::npos) return false;
+    std::istringstream rest(stat.substr(paren + 2));
+    std::string field;
+    unsigned long long utime = 0, stime = 0;
+    for (int i = 3; i <= 15 && rest >> field; ++i) {  // fields 14 and 15: utime, stime (ticks)
+        if (i == 14) utime = std::stoull(field);
+        if (i == 15) stime = std::stoull(field);
+    }
+    long hz = ::sysconf(_SC_CLK_TCK);
+    out->cpu_usec = (utime + stime) * 1000000ULL / static_cast<unsigned long long>(hz > 0 ? hz : 100);
+    std::istringstream statm(read_file("/proc/" + std::to_string(pid) + "/statm"));
+    long long pages = 0, resident = 0;
+    statm >> pages >> resident;
+    out->mem_bytes = resident * ::sysconf(_SC_PAGESIZE);
+    return true;
+#endif
 }
 
 bool Cgroups::join(const char* procs_path) {

@@ -1,6 +1,14 @@
 # The live mini Borg cell: 1 Borgmaster + 5 heterogeneous Borglets ("machines").
 #   docker compose up --build      then open http://localhost:8080
 #   docker compose stop borglet-3  to kill a machine; docker compose start borglet-3 to bring it back
+#   docker compose kill borgmaster; docker compose start borgmaster
+#                                  the Borgmaster restores its state; the tasks never stop (§3.1)
+#   docker compose down            stop the cell and forget its state
+#
+# docker-compose.ha.yml runs the same cell with five Borgmaster replicas and a separate scheduler.
+#
+# Optional Borglet settings (environment): BORGLET_DISK_MB (2048), BORGLET_PORTS (20000-20031),
+# BORGLET_CHROOT=1 to run every task in a chroot jail as an unprivileged user (§6.1).
 
 x-borglet: &borglet
   build:
@@ -21,8 +29,6 @@ services:
       dockerfile: docker/Dockerfile
     image: mini-borg:latest
     ports: ["8080:8080"]
-    volumes:
-      - ./results:/opt/borg/results:ro   # simulation results, shown in the console's sim tab
 
   borglet-1:
     <<: *borglet

@@ -1,106 +1,92 @@
-// Polls the Borgmaster, keeps the derived model, the event log and short usage histories, and
-// tells the UI when something changed. Pausing stops applying new data (the demo freeze).
+// Polls the Borgmaster about once a second, keeps the derived model, and tells the page when
+// something changed. It also knows how the connection is doing:
+//   connecting  no answer yet            live      the Borgmaster answers
+//   electing    it answers 503: the replicas are choosing a new master (retried every poll)
+//   down        it does not answer at all
 
-import { api } from './api.js';
-import { derive, transitions } from './model.js';
-
-const HISTORY = 90; // samples kept for sparklines (one per poll)
+import { derive } from './model.js';
 
 export class Store {
-  constructor() {
-    this.model = null;
-    this.events = [];
-    this.lastSeq = 0;
-    this.offset = 0;          // server clock - browser clock, seconds
-    this.connected = null;    // null until the first answer
-    this.error = '';
-    this.paused = false;
-    this.history = { cpuAlloc: [], cpuUsed: [], machines: new Map() };
-    this.results = null;      // simulation result CSVs, loaded on demand
+  constructor(api) {
+    this.api = api;
+    this.model = null;        // derive(state) of the last answer
+    this.replica = null;      // GET /internal/replica: which Borgmaster serves this page
+    this.link = 'connecting';
     this.listeners = new Set();
-    this.timer = null;
+    this.ticks = 0;
   }
 
   on(fn) {
     this.listeners.add(fn);
-    return () => this.listeners.delete(fn);
   }
 
   emit(kind, data) {
-    for (const fn of this.listeners) fn(kind, data);
+    for (const fn of this.listeners) {
+      try {
+        fn(kind, data);
+      } catch (e) {
+        console.error(e); // a listener failed: report it, but never stop polling
+      }
+    }
   }
 
-  now() {
-    return Date.now() / 1000 + this.offset;
+  get state() {
+    return this.model?.raw || null;
   }
 
   start(intervalMs = 1000) {
     const tick = async () => {
       await this.refresh();
-      this.timer = setTimeout(tick, intervalMs);
+      setTimeout(tick, intervalMs);
     };
     tick();
   }
 
-  setPaused(p) {
-    this.paused = p;
-    this.emit('paused', p);
-    if (!p) this.refresh();
+  setLink(link) {
+    const from = this.link;
+    this.link = link;
+    if (from !== link) this.emit('link', { from, to: link });
   }
 
-  async refresh() {
-    if (this.paused) return;
+  // An action just got 503 and is being retried: show it without waiting for the next poll.
+  noteElection() {
+    if (this.link === 'live') this.setLink('electing');
+  }
+
+  // One refresh at a time; a call that arrives meanwhile shares the one in flight.
+  refresh() {
+    this.busy = this.busy || this.refreshOnce().finally(() => { this.busy = null; });
+    return this.busy;
+  }
+
+  async refreshOnce() {
+    this.ticks++;
+    let state;
     try {
-      const [state, ev] = await Promise.all([api.state(), api.events(this.lastSeq)]);
-      if (this.paused) return;
-      this.offset = state.time - Date.now() / 1000;
-      const prev = this.model;
-      this.model = derive(state, state.time);
-      this.record(state);
-      let fresh = ev.events || [];
-      if (ev.last < this.lastSeq) {
-        // The master restarted and its event numbers began again: start over next poll.
-        this.events = [];
-        this.lastSeq = 0;
-        fresh = [];
-      } else {
-        this.lastSeq = ev.last;
-        this.events.push(...fresh);
-        if (this.events.length > 2000) this.events.splice(0, this.events.length - 2000);
-      }
-      const wasConnected = this.connected;
-      this.connected = true;
-      this.error = '';
-      if (wasConnected === false) this.emit('reconnected');
-      this.emit('update', { events: fresh, notes: transitions(prev, this.model) });
+      // The replica is an extra: a failure there must not look like a lost connection.
+      const [s, replica] = await Promise.all([
+        this.api.state(),
+        this.replica == null || this.ticks % 5 === 0 ? this.api.replica().catch(() => null) : null,
+      ]);
+      state = s;
+      if (replica) this.replica = replica;
     } catch (e) {
-      const changed = this.connected !== false;
-      this.connected = false;
-      this.error = e.message;
-      if (changed) this.emit('disconnected', e.message);
-      this.emit('update', { events: [], notes: [] });
+      this.setLink(e.status === 503 ? 'electing' : 'down');
+      this.emit('update');
+      return;
     }
-  }
-
-  record(state) {
-    const push = (arr, v) => {
-      arr.push(v);
-      if (arr.length > HISTORY) arr.shift();
-    };
-    const cap = state.capacity.cpu || 1;
-    push(this.history.cpuAlloc, state.allocated.cpu / cap);
-    push(this.history.cpuUsed, state.machines.reduce((s, m) => s + (m.status === 'up' ? m.usage.cpu : 0), 0) / cap);
-    for (const m of state.machines) {
-      if (!this.history.machines.has(m.id)) this.history.machines.set(m.id, []);
-      push(this.history.machines.get(m.id), m.status === 'up' ? m.usage.cpu / (m.capacity.cpu || 1) : null);
+    const before = this.model?.raw.master;
+    try {
+      this.model = derive(state);
+    } catch (e) {
+      console.error(e); // an answer the page cannot read: keep showing the last good one
     }
-  }
-
-  async loadResults(force = false) {
-    if (this.results && !force) return this.results;
-    const names = ['workload', 'policies', 'segregation', 'buckets', 'scalability', 'reclamation', 'hybrid_alpha'];
-    const rows = await Promise.all(names.map((n) => api.csv(n)));
-    this.results = Object.fromEntries(names.map((n, i) => [n, rows[i]]));
-    return this.results;
+    this.setLink('live');
+    const master = state.master;
+    if (before?.name && master?.name && before.name !== master.name) {
+      this.replica = null; // ask again who serves this page
+      this.emit('master', { name: master.name, election: master.election });
+    }
+    this.emit('update');
   }
 }

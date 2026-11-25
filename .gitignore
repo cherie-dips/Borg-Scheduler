@@ -1,4 +1,7 @@
-# Build output (make)
+# Build output (make). It also holds what local runs leave behind:
+#   build/cell      binaries, state and logs of a cell started by tools/cell.sh
+#   build/ui-smoke  screenshots from tests/ui/browser-smoke.mjs
+#   build/results   what borgsim writes when run as the README shows (--out build/results)
 build/
 *.o
 *.d
@@ -6,27 +9,24 @@ build/
 # The Google trace slice: large, and tools/fetch_trace.sh downloads it again
 data/
 
-# Local notes and design docs
-docs/
-
-# Logs from local runs (results/run_trace.log stays: the README links to it)
+# Logs from local runs (results/run_trace.log stays: it is part of the stored results)
 *.log
 !results/run_trace.log
 
-# Python
+# Python (tools/plot.py, tests/e2e_cell.py)
 __pycache__/
 *.py[cod]
 .venv/
 venv/
 
-# Node
+# Node: the page and its tests use no packages, so none belong in the repository
 node_modules/
 
 # Local environment and secrets
 .env
 .env.*
 
-# Editors and IDEs
+# Editor and IDE settings
 .vscode/
 .idea/
 *.swp

@@ -1,0 +1,112 @@
+# The same mini cell with the paper's full control plane (§3):
+#   - five Borgmaster replicas that share one state store; one is the elected master, the others
+#     follow it, pass requests on to it, and take over if it dies (§3.1)
+#   - a link shard in every replica, each polling some of the Borglets (§3.3)
+#   - the scheduler as a process of its own (§3.4)
+#
+#   docker compose -f docker-compose.ha.yml up --build -d
+#   open http://localhost:8081                 (borgmaster-2; every replica serves the page)
+#   docker compose -f docker-compose.ha.yml kill borgmaster-1     kill the elected master: another takes over
+#   docker compose -f docker-compose.ha.yml start borgmaster-1    it comes back as a follower
+#   docker compose -f docker-compose.ha.yml stop borgscheduler    the elected master schedules by itself again
+#   docker compose -f docker-compose.ha.yml down -v               stop everything and forget the state
+#
+# The plain docker-compose.yml (one Borgmaster) stays the simple way to run the cell.
+name: mini-borg-ha
+
+x-master: &master
+  build:
+    context: .
+    dockerfile: docker/Dockerfile
+  image: mini-borg:latest
+  volumes:
+    - borg-state:/var/borg/master           # the shared state store: snapshot, change log, master lock
+
+x-borglet: &borglet
+  image: mini-borg:latest
+  command: ["borglet"]
+  # Privileged + private cgroup namespace: the Borglet creates one cgroup v2 per task.
+  privileged: true
+  cgroup: private
+  restart: unless-stopped
+  depends_on: [borgmaster-1]
+
+services:
+  borgmaster-1:
+    <<: *master
+    hostname: borgmaster-1
+    ports: ["8080:8080"]
+    command: ["borgmaster", "--port", "8080", "--ui", "/opt/borg/ui",
+              "--state", "/var/borg/master", "--replica", "borgmaster-1", "--advertise", "http://borgmaster-1:8080"]
+
+  borgmaster-2:
+    <<: *master
+    hostname: borgmaster-2
+    ports: ["8081:8080"]
+    command: ["borgmaster", "--port", "8080", "--ui", "/opt/borg/ui",
+              "--state", "/var/borg/master", "--replica", "borgmaster-2", "--advertise", "http://borgmaster-2:8080"]
+
+  borgmaster-3:
+    <<: *master
+    hostname: borgmaster-3
+    ports: ["8082:8080"]
+    command: ["borgmaster", "--port", "8080", "--ui", "/opt/borg/ui",
+              "--state", "/var/borg/master", "--replica", "borgmaster-3", "--advertise", "http://borgmaster-3:8080"]
+
+  borgmaster-4:
+    <<: *master
+    hostname: borgmaster-4
+    ports: ["8083:8080"]
+    command: ["borgmaster", "--port", "8080", "--ui", "/opt/borg/ui",
+              "--state", "/var/borg/master", "--replica", "borgmaster-4", "--advertise", "http://borgmaster-4:8080"]
+
+  borgmaster-5:
+    <<: *master
+    hostname: borgmaster-5
+    ports: ["8084:8080"]
+    command: ["borgmaster", "--port", "8080", "--ui", "/opt/borg/ui",
+              "--state", "/var/borg/master", "--replica", "borgmaster-5", "--advertise", "http://borgmaster-5:8080"]
+
+  borgscheduler:
+    image: mini-borg:latest
+    command: ["borgscheduler", "--master", "http://borgmaster-1:8080,http://borgmaster-2:8080,http://borgmaster-3:8080,http://borgmaster-4:8080,http://borgmaster-5:8080"]
+    restart: unless-stopped
+    depends_on: [borgmaster-1]
+
+  borglet-1:
+    <<: *borglet
+    hostname: borglet-1
+    environment: {BORGLET_NAME: borglet-1, BORGLET_CPU: "1", BORGLET_RAM_MB: "512", BORGLET_ATTRS: "rack=r1,ssd=false", BORG_MASTER: "http://borgmaster-1:8080,http://borgmaster-2:8080,http://borgmaster-3:8080,http://borgmaster-4:8080,http://borgmaster-5:8080"}
+    cpus: 1.0
+    mem_limit: 640m
+
+  borglet-2:
+    <<: *borglet
+    hostname: borglet-2
+    environment: {BORGLET_NAME: borglet-2, BORGLET_CPU: "1", BORGLET_RAM_MB: "512", BORGLET_ATTRS: "rack=r1,ssd=false", BORG_MASTER: "http://borgmaster-1:8080,http://borgmaster-2:8080,http://borgmaster-3:8080,http://borgmaster-4:8080,http://borgmaster-5:8080"}
+    cpus: 1.0
+    mem_limit: 640m
+
+  borglet-3:
+    <<: *borglet
+    hostname: borglet-3
+    environment: {BORGLET_NAME: borglet-3, BORGLET_CPU: "2", BORGLET_RAM_MB: "1024", BORGLET_ATTRS: "rack=r2,ssd=true", BORG_MASTER: "http://borgmaster-1:8080,http://borgmaster-2:8080,http://borgmaster-3:8080,http://borgmaster-4:8080,http://borgmaster-5:8080"}
+    cpus: 2.0
+    mem_limit: 1152m
+
+  borglet-4:
+    <<: *borglet
+    hostname: borglet-4
+    environment: {BORGLET_NAME: borglet-4, BORGLET_CPU: "2", BORGLET_RAM_MB: "1024", BORGLET_ATTRS: "rack=r2,ssd=true", BORG_MASTER: "http://borgmaster-1:8080,http://borgmaster-2:8080,http://borgmaster-3:8080,http://borgmaster-4:8080,http://borgmaster-5:8080"}
+    cpus: 2.0
+    mem_limit: 1152m
+
+  borglet-5:
+    <<: *borglet
+    hostname: borglet-5
+    environment: {BORGLET_NAME: borglet-5, BORGLET_CPU: "1", BORGLET_RAM_MB: "768", BORGLET_ATTRS: "rack=r3,ssd=false", BORG_MASTER: "http://borgmaster-1:8080,http://borgmaster-2:8080,http://borgmaster-3:8080,http://borgmaster-4:8080,http://borgmaster-5:8080"}
+    cpus: 1.0
+    mem_limit: 896m
+
+volumes:
+  borg-state:

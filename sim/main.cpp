@@ -1,5 +1,5 @@
-// borgsim: a Fauxmaster-like simulator that runs the Borg scheduler over a workload
-// snapshot and reproduces the paper's scheduling experiments with cell compaction.
+// borgsim: a Fauxmaster-like simulator that runs our Borg scheduler over a workload snapshot
+// (such as Google's trace) and analyzes it with the paper's experiments and cell compaction.
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>

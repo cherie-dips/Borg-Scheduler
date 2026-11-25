@@ -1,134 +1,69 @@
-// Turns the raw /api/state document into what the views draw: job progress, ETAs, health,
-// countdowns, groups, per-machine numbers. Pure functions; `now` is server time in seconds.
+// Turns the raw /api/state document into what the page draws: the machines with the tasks on
+// them, and plain words for priority bands and for how a job is doing. Pure functions (no DOM).
 
 export const PLACED = new Set(['starting', 'installing', 'running']);
-export const TERMINAL = new Set(['finished', 'failed', 'oom', 'killed']);
 
-// Job status -> dashboard group. The server's statuses are finer grained.
-export const GROUP = {
-  running: 'running', queued: 'queued', waiting: 'queued',
-  completed: 'completed', killed: 'completed', failed: 'failed',
+// Priority bands, highest first. `cls` is the name of the band's colour in the stylesheet.
+export const BANDS = {
+  monitoring: { label: 'Monitoring', cls: 'mon' },
+  production: { label: 'Production', cls: 'prod' },
+  batch: { label: 'Batch', cls: 'batch' },
+  free: { label: 'Free', cls: 'free' },
 };
-export const GROUPS = ['running', 'queued', 'completed', 'failed'];
+export const bandClass = (band) => BANDS[band]?.cls || 'free';
 
-export function emptyCounts() {
-  return { waiting: 0, pending: 0, starting: 0, installing: 0, running: 0, finished: 0, failed: 0, oom: 0, killed: 0 };
-}
+const machineStatus = (m) => (m.status !== 'up' ? 'down' : m.drain === 'draining' ? 'draining' : m.drain === 'drained' ? 'drained' : 'up');
 
-export function jobModel(job, tasks, now) {
-  const list = tasks.filter((t) => t.job === job.id).sort((a, b) => a.index - b.index);
-  const n = list.length || job.tasks || 1;
-  const c = emptyCounts();
-  for (const t of list) c[t.state] = (c[t.state] || 0) + 1;
-
-  const d = job.duration || 0; // 0: a service that runs until stopped
-  let progress = null, eta = null, doneFrac = 0, failedFrac = 0, runFrac = 0;
-  if (d > 0) {
-    let maxLeft = 0, allStarted = true;
-    for (const t of list) {
-      if (t.state === 'finished') doneFrac += 1;
-      else if (TERMINAL.has(t.state)) failedFrac += 1;
-      else if (t.state === 'running' && t.started) {
-        const ran = Math.max(0, now - t.started);
-        runFrac += Math.min(1, ran / d);
-        maxLeft = Math.max(maxLeft, d - ran);
-      } else allStarted = false;
-    }
-    [doneFrac, failedFrac, runFrac] = [doneFrac / n, failedFrac / n, runFrac / n];
-    progress = Math.min(1, doneFrac + failedFrac + runFrac);
-    eta = allStarted && c.running > 0 ? Math.max(0, maxLeft) : null;
-  }
-
-  const live = list.filter((t) => !TERMINAL.has(t.state));
-  const releases = list.map((t) => t.release).filter((r) => r > 0);
-  const startsIn = job.status === 'waiting' && releases.length ? Math.max(0, Math.min(...releases) - now) : null;
-  const pending = list.find((t) => t.state === 'pending');
-  const failedTask = list.find((t) => t.state === 'failed' || t.state === 'oom');
-
-  return {
-    ...job,
-    taskList: list,
-    n,
-    c,
-    live: live.length,
-    up: c.running,
-    group: GROUP[job.status] || 'queued',
-    progress,          // 0..1 for jobs with an end, null for services
-    doneFrac, failedFrac, runFrac,
-    eta,               // seconds until the last running task ends (once all have started)
-    startsIn,          // seconds until a delayed job starts
-    uptime: job.started_at && !job.done ? now - job.started_at : null,
-    elapsed: job.done && job.finished_at && job.started_at ? job.finished_at - job.started_at : null,
-    reason: failedTask?.reason || pending?.reason || '',
-    restarts: list.reduce((s, t) => s + t.restarts, 0),
-    preemptions: list.reduce((s, t) => s + t.preemptions, 0),
-  };
-}
-
-export function taskProgress(task, duration, now) {
-  if (task.state === 'finished') return 1;
-  if (!(duration > 0) || task.state !== 'running' || !task.started) return null;
-  return Math.min(1, Math.max(0, (now - task.started) / duration));
-}
-
-export function machineModel(m, tasksById) {
-  const cap = m.capacity, alloc = m.allocated, prod = m.allocated_prod, use = m.usage;
-  const frac = (a, b) => (b > 0 ? Math.min(1, a / b) : 0);
+function machineView(m, tasksById) {
+  const here = (m.tasks || []).map((id) => tasksById.get(id)).filter(Boolean);
+  const ids = new Set(here.map((t) => t.id));
+  const order = (a, b) => b.priority - a.priority || a.job - b.job || a.index - b.index;
+  // Tasks that run inside an alloc are drawn inside it, not next to it.
+  const top = here.filter((t) => !(t.alloc && ids.has(t.alloc))).sort(order);
   return {
     ...m,
     up: m.status === 'up',
-    taskList: m.tasks.map((id) => tasksById.get(id)).filter(Boolean)
-      .sort((a, b) => b.priority - a.priority || a.job - b.job || a.index - b.index),
-    cpu: { prod: frac(prod.cpu, cap.cpu), nonprod: frac(alloc.cpu - prod.cpu, cap.cpu), used: frac(use.cpu, cap.cpu) },
-    ram: { prod: frac(prod.ram, cap.ram), nonprod: frac(alloc.ram - prod.ram, cap.ram), used: frac(use.ram, cap.ram) },
+    state: machineStatus(m),
+    count: here.filter((t) => t.type !== 'alloc').length,
+    groups: top.map((t) => ({ task: t, inside: t.type === 'alloc' ? here.filter((x) => x.alloc === t.id).sort(order) : [] })),
+    cpu: { cap: m.capacity?.cpu || 0, asked: m.allocated?.cpu || 0 },
+    ram: { cap: m.capacity?.ram || 0, asked: m.allocated?.ram || 0 },
   };
 }
 
-export function derive(state, now) {
-  const tasksById = new Map(state.tasks.map((t) => [t.id, t]));
-  const jobs = state.jobs.map((j) => jobModel(j, state.tasks, now))
-    .sort((a, b) => (GROUPS.indexOf(a.group) - GROUPS.indexOf(b.group)) || b.priority - a.priority || b.id - a.id);
-  const machines = state.machines.map((m) => machineModel(m, tasksById))
+export function derive(state) {
+  const tasks = state.tasks || [];
+  const tasksById = new Map(tasks.map((t) => [t.id, t]));
+  const machines = (state.machines || []).map((m) => machineView(m, tasksById))
     .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
-  const groups = Object.fromEntries(GROUPS.map((g) => [g, jobs.filter((j) => j.group === g)]));
-  const tc = { ...emptyCounts(), ...(state.task_counts || {}) };
+  const real = tasks.filter((t) => t.type !== 'alloc');
   return {
     raw: state,
-    now,
-    jobs,
+    now: state.time,
     machines,
-    groups,
-    tasksById,
-    jobsById: new Map(jobs.map((j) => [j.id, j])),
-    counts: {
-      machinesUp: machines.filter((m) => m.up).length,
-      machines: machines.length,
-      running: tc.running + tc.installing + tc.starting,
-      queued: tc.pending + tc.waiting,
-      done: tc.finished,
-      failed: tc.failed + tc.oom,
-      killed: tc.killed,
-    },
+    machinesUp: machines.filter((m) => m.up).length,
+    running: real.filter((t) => PLACED.has(t.state)).length,
+    waiting: real.filter((t) => t.state === 'pending').length,
+    // Tasks that are on no machine: waiting, pending, or ended.
+    unplaced: tasks.filter((t) => !PLACED.has(t.state)).sort((a, b) => a.job - b.job || a.index - b.index),
   };
 }
 
-// Status changes worth telling the user about, between two derived snapshots.
-export function transitions(prev, next) {
-  if (!prev) return [];
-  const out = [];
-  for (const j of next.jobs) {
-    const before = prev.jobsById.get(j.id);
-    if (!before || before.status === j.status) continue;
-    if (j.status === 'completed') out.push({ level: 'ok', text: `${j.name} completed${j.elapsed ? ` in ${Math.round(j.elapsed)}s` : ''}` });
-    else if (j.status === 'failed') out.push({ level: 'err', text: `${j.name} failed: ${j.reason || 'a task failed'}` });
-    else if (j.status === 'running' && (before.status === 'queued' || before.status === 'waiting'))
-      out.push({ level: 'info', text: `${j.name} is running` });
-  }
-  const prevM = new Map(prev.machines.map((m) => [m.id, m]));
-  for (const m of next.machines) {
-    const b = prevM.get(m.id);
-    if (b && b.status !== m.status)
-      out.push(m.up ? { level: 'ok', text: `${m.name} is back up` } : { level: 'err', text: `${m.name} is DOWN; its tasks are being rescheduled` });
-  }
-  return out;
+// Why a task is still waiting for a machine, in plain words.
+export function whyWaiting(reason) {
+  const r = String(reason || '').replace(/^waiting:\s*/, '');
+  if (/satisfies the constraints/.test(r)) return 'no machine is big enough for it';
+  if (/no machine has enough free/.test(r)) return 'no machine has enough free room at this priority';
+  return r;
+}
+
+// How a job is doing: "3 of 3 running" · "all 4 waiting for a machine" · "2 of 3 running, 1 waiting"
+export function jobStatus(j) {
+  if (j.done) return j.status === 'completed' ? 'finished' : j.status === 'killed' ? 'stopped' : 'failed';
+  const c = j.counts || {};
+  const running = (c.running || 0) + (c.starting || 0) + (c.installing || 0);
+  const pending = c.pending || 0, held = c.waiting || 0;
+  if (held && !running && !pending) return j.after ? `starts after ${j.after}` : 'not started yet';
+  if (pending && !running) return j.tasks === 1 ? 'waiting for a machine' : `all ${j.tasks} waiting for a machine`;
+  return `${running} of ${j.tasks} running${pending ? `, ${pending} waiting` : ''}${held ? `, ${held} not started yet` : ''}`;
 }

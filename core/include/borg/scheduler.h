@@ -1,7 +1,8 @@
 // The Borg scheduler (§3.2 and §3.4 of the paper).
 //
 // One pass over the pending queue:
-//   1. order tasks by priority (high to low), round-robin across users within a priority;
+//   1. order tasks by priority (high to low); within a priority, users take turns placing one
+//      task at a time, and the user who goes first rotates from pass to pass;
 //   2. feasibility: machines that satisfy the task's constraints and have enough "available"
 //      resources, counting resources of lower-priority (evictable) tasks as available;
 //   3. scoring: pick the best feasible machine according to the configured policy;
@@ -50,6 +51,8 @@ struct SchedulerConfig {
     double w_spread = 0.1;       // per task of the same job already on the machine
     double w_soft_constraint = 0.3;  // per satisfied soft constraint
     double w_package = 0.2;      // bonus if the machine already has the task's package
+    double w_mix = 0.0;          // bonus for mixing prod and non-prod work on one machine, so prod
+                                 // tasks have room to expand in a load spike (§3.2); off by default
     double hybrid_alpha = 10.0;  // weight of the imbalance (stranding) term in Hybrid; 0 = best fit.
                                  // Chosen with `borgsim alpha` (gains level off around 10)
     double epvm_k = 4.0;         // steepness of the E-PVM cost curve
@@ -60,6 +63,10 @@ struct SchedulerConfig {
 struct Placement {
     TaskId task;
     MachineId machine;
+    // The machine's version just before this placement (and the preemptions made for it). A
+    // scheduler that works on a copy of the cell reports it, so the cell's owner can tell
+    // whether the machine changed meanwhile (§3.4).
+    uint64_t machine_version = 0;
 };
 
 struct Preemption {
@@ -91,7 +98,6 @@ public:
 
     const SchedulerConfig& config() const { return cfg_; }
     void set_config(const SchedulerConfig& cfg);
-    void clear_cache() { cache_.clear(); }
 
     bool is_prod(int priority) const { return priority >= cfg_.prod_min_priority; }
 
@@ -124,12 +130,14 @@ private:
     double cached_score(const Cell& cell, const Task& t, const Machine& m, uint64_t class_key,
                         ScheduleResult& res);
     void place_with_preemption(Cell& cell, TaskId id, MachineId m, ScheduleResult& res);
-    std::vector<std::vector<TaskId>> order_pending(const Cell& cell) const;
+    // Pending tasks in submission order, grouped into equivalence classes.
+    std::vector<std::vector<TaskId>> group_pending(const Cell& cell) const;
     uint64_t class_key(const Task& t) const;
 
     SchedulerConfig cfg_;
     std::mt19937_64 rng_;
     std::vector<MachineId> perm_;  // random machine order for relaxed randomization
+    uint64_t pass_ = 0;            // scheduling passes so far; rotates which user goes first
     std::unordered_map<uint64_t, CacheEntry> cache_;
 };
 

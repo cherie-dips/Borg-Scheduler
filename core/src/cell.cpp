@@ -76,6 +76,26 @@ void Cell::set_machine_up(MachineId mid, bool up) {
     }
 }
 
+void Cell::set_draining(MachineId mid, bool draining) {
+    Machine& m = machines_.at(mid);
+    if (m.draining != draining) {
+        m.draining = draining;
+        m.version++;
+    }
+}
+
+void Cell::set_reservation(TaskId id, const Resources& r) {
+    Task& t = tasks_.at(id);
+    if (t.machine >= 0) {
+        Machine& m = machines_.at(t.machine);
+        Resources& total = m.resv_by_prio[t.priority];
+        total -= t.reservation;
+        total += r;
+        m.version++;
+    }
+    t.reservation = r;
+}
+
 std::vector<TaskId> Cell::pending() const {
     std::vector<TaskId> out;
     for (const auto& [id, t] : tasks_)

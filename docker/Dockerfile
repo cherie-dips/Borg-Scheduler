@@ -1,4 +1,4 @@
-# One image for both the Borgmaster and the Borglets (the command picks which).
+# One image for the Borgmaster, the scheduler process and the Borglets (the command picks which).
 FROM ubuntu:24.04 AS build
 RUN apt-get update \
  && apt-get install -y --no-install-recommends g++ make \
@@ -12,8 +12,10 @@ COPY borglet borglet
 RUN make -j"$(nproc)" cell
 
 FROM ubuntu:24.04
-COPY --from=build /src/build/bin/borgmaster /src/build/bin/borglet /usr/local/bin/
+COPY --from=build /src/build/bin/borgmaster /src/build/bin/borgscheduler /src/build/bin/borglet /usr/local/bin/
 COPY ui /opt/borg/ui
 WORKDIR /opt/borg
 EXPOSE 8080 9090
-CMD ["borgmaster", "--port", "8080", "--ui", "/opt/borg/ui", "--results", "/opt/borg/results"]
+# --state: the Borgmaster keeps a snapshot and a change log there, so it survives a restart
+# (docker compose kill borgmaster; docker compose start borgmaster). "docker compose down" clears it.
+CMD ["borgmaster", "--port", "8080", "--ui", "/opt/borg/ui", "--state", "/var/borg/master"]

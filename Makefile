@@ -15,7 +15,7 @@ SIM_OBJ  := $(SIM_SRC:%.cpp=$(BUILD)/%.o)
 all: sim cell $(BIN)/test_core
 
 sim:  $(BIN)/borgsim
-cell: $(BIN)/borgmaster $(BIN)/borglet
+cell: $(BIN)/borgmaster $(BIN)/borgscheduler $(BIN)/borglet
 
 $(BUILD)/%.o: %.cpp
 	@mkdir -p $(dir $@)
@@ -26,6 +26,10 @@ $(BIN)/borgsim: $(SIM_OBJ) $(CORE_OBJ)
 	$(CXX) $(CXXFLAGS) $^ -o $@
 
 $(BIN)/borgmaster: $(BUILD)/master/main.o $(CORE_OBJ)
+	@mkdir -p $(BIN)
+	$(CXX) $(CXXFLAGS) $^ -o $@
+
+$(BIN)/borgscheduler: $(BUILD)/master/scheduler_main.o $(CORE_OBJ)
 	@mkdir -p $(BIN)
 	$(CXX) $(CXXFLAGS) $^ -o $@
 

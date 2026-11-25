@@ -1,23 +1,29 @@
 <!doctype html>
-<html lang="en" data-theme="mono" class="fx-scanlines fx-glow">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>mini-borg</title>
-  <meta name="description" content="Terminal console for the Mini Borg cluster manager: schedule jobs, watch tasks, fail machines.">
+  <title>Live Borg Cell</title>
+  <meta name="description" content="A working Borg cell, live: guided demos, a console to drive it yourself, and the cell's machines, jobs and event log.">
   <meta name="theme-color" content="#000000">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23000000'/%3E%3Cpath d='M3 5l5-3 5 3v6l-5 3-5-3z' fill='none' stroke='%23ffffff' stroke-width='1.2'/%3E%3Cpath d='M3 5l5 3 5-3M8 8v6' fill='none' stroke='%23ffffff' stroke-width='1'/%3E%3C/svg%3E">
-  <link rel="preload" href="fonts/JetBrainsMono-Regular.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="css/theme.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23000'/%3E%3Cpath d='M3 5l3.5 3L3 11M8.5 11.5H13' fill='none' stroke='%23fff' stroke-width='1.6'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="css/app.css">
-  <link rel="stylesheet" href="css/fx.css">
 </head>
 <body>
-  <noscript><p style="padding:2em">mini-borg's console needs JavaScript. The REST API is at <code>/api/state</code>.</p></noscript>
-  <div id="boot" class="boot" hidden></div>
-  <div id="app" class="app" hidden></div>
-  <div id="layer"></div>
-  <div id="announcer" class="sr-only" aria-live="polite"></div>
+  <noscript><p style="padding:2em">This page needs JavaScript. The Borgmaster's REST API is at <code>/api/state</code>.</p></noscript>
+  <header class="hd">
+    <h1>LIVE BORG CELL</h1>
+    <div class="hd-status" id="status" role="status"></div>
+  </header>
+  <nav class="tabs" aria-label="Sections">
+    <a href="#/demos" data-tab="demos">DEMOS</a>
+    <a href="#/console" data-tab="console">CONSOLE</a>
+    <a href="#/cell" data-tab="cell">CELL</a>
+    <a href="#/log" data-tab="log">LOG</a>
+  </nav>
+  <main id="view" class="view"></main>
+  <footer class="foot" id="foot"></footer>
+  <div id="ghosts" class="ghosts" aria-hidden="true"></div>
   <script type="module" src="js/main.js"></script>
 </body>
 </html>
